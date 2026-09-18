@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS launch_workspaces (
+  id TEXT PRIMARY KEY,
+  data JSONB NOT NULL,
+  revision INTEGER NOT NULL DEFAULT 1,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
