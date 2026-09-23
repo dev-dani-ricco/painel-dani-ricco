@@ -80,3 +80,48 @@
 ::-webkit-scrollbar { width: 7px; height: 7px; }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 999px; }
 ::-webkit-scrollbar-track { background: transparent; }
+
+
+/* Public IMPAR® experience */
+.impar-public {
+  --impar-wine: #681b31;
+  --impar-wine-dark: #4e1124;
+  --impar-ink: #2d171e;
+  --impar-paper: #f8f5f2;
+  min-height: 100vh;
+  background: var(--impar-paper);
+  color: var(--impar-ink);
+  font-family: var(--font-manrope), "Manrope", ui-sans-serif, system-ui, sans-serif;
+  color-scheme: light;
+}
+
+.impar-serif {
+  font-family: "Bodoni 72", Didot, "Bodoni MT", "Times New Roman", Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+
+.impar-input {
+  height: 3.25rem;
+  width: 100%;
+  border-radius: 0.875rem;
+  border: 1px solid rgb(109 33 54 / 18%);
+  background: rgb(255 255 255 / 82%);
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  color: #352127;
+  outline: none;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.impar-input::placeholder { color: #ae9da2; }
+.impar-input:focus {
+  border-color: rgb(104 27 49 / 58%);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgb(104 27 49 / 8%);
+}
+
+.impar-public ::selection {
+  background: #681b31;
+  color: #fff;
+}
