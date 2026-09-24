@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
-  Bell, BookOpen, Boxes, CalendarDays, ChartNoAxesColumnIncreasing, CheckSquare2, ChevronRight, Cloud, CloudOff, LoaderCircle,
+  Bell, BookOpen, Boxes, BrainCircuit, CalendarDays, ChartNoAxesColumnIncreasing, CheckSquare2, ChevronRight, Cloud, CloudOff, LoaderCircle,
   ClipboardList, FileText, FolderOpen, LayoutDashboard, Menu, PackageCheck, Plus,
   Search, Settings, Sparkles, UserRound,
 } from "lucide-react"
@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils"
 
 export const navigation = [
   { href: "/", title: "Visão Geral", short: "Visão Geral", icon: LayoutDashboard },
+  { href: "/inteligencia", title: "Central de Inteligência", short: "Inteligência", icon: BrainCircuit },
   { href: "/calendario", title: "Calendário", short: "Calendário", icon: CalendarDays },
   { href: "/produto", title: "Briefing 01 — Produto", short: "Produto", icon: FileText },
   { href: "/oferta", title: "Briefing 02 — Oferta", short: "Oferta", icon: Sparkles },

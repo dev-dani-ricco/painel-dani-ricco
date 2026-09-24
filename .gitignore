@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# local knowledge-file fallback (development only)
+/.data/
 
 # vercel
 .vercel
