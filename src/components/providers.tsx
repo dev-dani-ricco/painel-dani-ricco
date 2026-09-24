@@ -7,7 +7,11 @@ import { DataProvider } from "@/components/data-provider"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const publicRoute = pathname.startsWith("/site")
+  const publicHost =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "daniricco.com.br" ||
+      window.location.hostname === "www.daniricco.com.br")
+  const publicRoute = pathname.startsWith("/site") || publicHost
 
   const content = (
     <TooltipProvider delayDuration={200}>
