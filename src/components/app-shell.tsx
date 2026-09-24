@@ -72,7 +72,12 @@ function DashboardShell({ children, pathname }: { children: React.ReactNode; pat
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const publicRoute = pathname.startsWith("/diagnostico") || pathname.startsWith("/mapa-arquetipico") || pathname.startsWith("/site")
+  const publicHost =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "daniricco.com.br" ||
+      window.location.hostname === "www.daniricco.com.br")
+  const publicRoute = pathname.startsWith("/site") || publicHost
+
   if (publicRoute) return <>{children}</>
   return <DashboardShell pathname={pathname}>{children}</DashboardShell>
 }
