@@ -75,7 +75,7 @@ export function TestExperience({ sessionId }: { sessionId: string }) {
   }
 
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-80px)] w-full max-w-4xl flex-col px-5 py-8 sm:px-8 sm:py-12">
+    <main className="relative mx-auto flex min-h-[calc(100vh-86px)] w-full max-w-[1120px] flex-col overflow-hidden bg-[#f4efe8] px-5 py-8 sm:px-8 sm:py-12">
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[.24em] text-[#792540]">Pilar {pillarLabels[question.pillar]}</p>
@@ -83,8 +83,8 @@ export function TestExperience({ sessionId }: { sessionId: string }) {
         </div>
         <span className="impar-serif text-2xl text-[#6c2137]">{String(index + 1).padStart(2, "0")}</span>
       </div>
-      <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-[#e8dddf]">
-        <div className="h-full rounded-full bg-[#702038] transition-all duration-500" style={{ width: `${progress}%` }} />
+      <div className="mt-5 h-px overflow-hidden bg-[#d8cbc5]">
+        <div className="h-full bg-[#702038] transition-all duration-500" style={{ width: `${progress}%` }} />
       </div>
 
       <section className="my-auto py-10 sm:py-16">
@@ -94,8 +94,8 @@ export function TestExperience({ sessionId }: { sessionId: string }) {
           {question.options.map((option, optionIndex) => {
             const active = selected === option.id
             return (
-              <button key={option.id} onClick={() => setAnswers((current) => ({ ...current, [question.id]: option.id }))} className={`group flex min-h-24 items-center gap-4 rounded-2xl border p-5 text-left transition ${active ? "border-[#72213a] bg-[#72213a] text-white shadow-[0_20px_50px_rgba(104,27,49,.18)]" : "border-[#d8cbce] bg-white/75 text-[#443137] hover:border-[#9f7380] hover:bg-white"}`}>
-                <span className={`flex size-8 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${active ? "border-white/35 bg-white/10" : "border-[#d7c9cd] text-[#917780]"}`}>
+              <button key={option.id} onClick={() => setAnswers((current) => ({ ...current, [question.id]: option.id }))} className={`group flex min-h-24 items-center gap-4 border p-5 text-left transition ${active ? "border-[#72213a] bg-[#72213a] text-white" : "border-[#cfc1bc] bg-[#faf6f1] text-[#443137] hover:border-[#8e6772] hover:bg-white"}`}>
+                <span className={`flex size-8 shrink-0 items-center justify-center border text-xs font-bold ${active ? "border-white/35 bg-white/10" : "border-[#c7b6b0] text-[#917780]"}`}>
                   {active ? <Check className="size-4" /> : optionIndex + 1}
                 </span>
                 <span className="text-sm font-medium leading-6">{option.label}</span>
@@ -110,7 +110,7 @@ export function TestExperience({ sessionId }: { sessionId: string }) {
         <button disabled={index === 0 || submitting} onClick={() => setIndex((value) => Math.max(0, value - 1))} className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[.12em] text-[#876f76] disabled:opacity-30">
           <ArrowLeft className="size-4" /> Voltar
         </button>
-        <button disabled={!selected || submitting} onClick={next} className="flex h-12 items-center gap-3 rounded-full bg-[#681b31] px-6 text-xs font-bold uppercase tracking-[.13em] text-white transition hover:bg-[#501326] disabled:opacity-40">
+        <button disabled={!selected || submitting} onClick={next} className="flex h-12 items-center gap-3 bg-[#5a1729] px-6 text-[10px] font-bold uppercase tracking-[.17em] text-white transition hover:bg-[#43101f] disabled:opacity-40">
           {submitting ? <><LoaderCircle className="size-4 animate-spin" /> Calculando</> : <>{index === diagnosticQuestions.length - 1 ? "Ver meu resultado" : "Continuar"}<ArrowRight className="size-4" /></>}
         </button>
       </div>

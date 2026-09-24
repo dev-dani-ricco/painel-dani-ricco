@@ -89,6 +89,7 @@
   --impar-ink: #2d171e;
   --impar-paper: #f8f5f2;
   min-height: 100vh;
+  overflow-x: hidden;
   background: var(--impar-paper);
   color: var(--impar-ink);
   font-family: var(--font-manrope), "Manrope", ui-sans-serif, system-ui, sans-serif;
@@ -102,23 +103,24 @@
 }
 
 .impar-input {
-  height: 3.25rem;
+  height: 3.5rem;
   width: 100%;
-  border-radius: 0.875rem;
-  border: 1px solid rgb(109 33 54 / 18%);
-  background: rgb(255 255 255 / 82%);
-  padding: 0 1rem;
+  border: 0;
+  border-bottom: 1px solid rgb(74 52 47 / 24%);
+  border-radius: 0;
+  background: transparent;
+  padding: 0 .1rem;
   font-size: 0.875rem;
   color: #352127;
   outline: none;
-  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+  transition: border-color .18s ease, background .18s ease;
 }
 
-.impar-input::placeholder { color: #ae9da2; }
+.impar-input::placeholder { color: #ad9b95; }
 .impar-input:focus {
-  border-color: rgb(104 27 49 / 58%);
-  background: #fff;
-  box-shadow: 0 0 0 4px rgb(104 27 49 / 8%);
+  border-bottom-color: #681b31;
+  background: transparent;
+  box-shadow: none;
 }
 
 .impar-public ::selection {

@@ -53,6 +53,18 @@ const worker = {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url)
     const host = url.hostname.toLowerCase()
+    const assetPath =
+      url.pathname.startsWith("/_next/") ||
+      url.pathname === "/favicon.ico" ||
+      url.pathname === "/robots.txt" ||
+      url.pathname === "/sitemap.xml" ||
+      url.pathname.startsWith("/images/") ||
+      url.pathname.startsWith("/fonts/") ||
+      url.pathname.startsWith("/dani/")
+
+    if (assetPath) {
+      return proxyToVercel(request, url.pathname)
+    }
 
     if (host === "www.daniricco.com.br") {
       return redirect(url, "daniricco.com.br")
