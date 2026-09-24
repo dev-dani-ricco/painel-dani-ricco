@@ -75,8 +75,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const publicHost =
     typeof window !== "undefined" &&
     (window.location.hostname === "daniricco.com.br" ||
-      window.location.hostname === "www.daniricco.com.br")
-  const publicRoute = pathname.startsWith("/site") || publicHost
+      window.location.hostname === "www.daniricco.com.br" ||
+      window.location.hostname === "bio.daniricco.com.br")
+  const publicRoute = (pathname.startsWith("/site") || pathname.startsWith("/bio")) || publicHost
 
   if (publicRoute) return <>{children}</>
   return <DashboardShell pathname={pathname}>{children}</DashboardShell>
