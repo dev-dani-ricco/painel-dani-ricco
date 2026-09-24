@@ -7,10 +7,7 @@ import { DataProvider } from "@/components/data-provider"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const publicRoute =
-    pathname.startsWith("/diagnostico") ||
-    pathname.startsWith("/mapa-arquetipico") ||
-    pathname.startsWith("/site")
+  const publicRoute = pathname.startsWith("/site")
 
   const content = (
     <TooltipProvider delayDuration={200}>

@@ -1,7 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
-import { PublicFrame } from "@/components/diagnostico/public-frame"
+import { PublicFrame } from "@/components/public-site-frame"
 
 export const metadata = {
   title: "Dani Ricco | Comunicação de Impacto",
