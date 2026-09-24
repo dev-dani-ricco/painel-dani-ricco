@@ -1,9 +1,20 @@
+import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { CalendarPage } from "@/components/pages/calendar-page"
 import { CoursePage, MembersPage } from "@/components/pages/course-members"
 import { DebriefPage, LaunchPage, OfferPage, PreLaunchPage, ProductPage } from "@/components/pages/briefings"
 import { MaterialsPage, SettingsPage } from "@/components/pages/materials-settings"
 import { ProductionPage } from "@/components/pages/production"
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    noarchive: true,
+    nosnippet: true,
+    noimageindex: true,
+  },
+}
 
 const pages = {
   calendario: CalendarPage,
