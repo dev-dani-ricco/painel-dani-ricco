@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
-  Bell, BookOpen, Boxes, BrainCircuit, CalendarDays, ChartNoAxesColumnIncreasing, CheckSquare2, ChevronRight, Cloud, CloudOff, LoaderCircle,
+  Bell, BookOpen, Boxes, BrainCircuit, CalendarDays, ChartNoAxesColumnIncreasing, CheckSquare2, ChevronDown, ChevronRight, Cloud, CloudOff, LoaderCircle,
   ClipboardList, FileText, FolderOpen, KeyRound, LayoutDashboard, LogOut, Menu, PackageCheck, Plus,
   Search, Settings, Sparkles, UserRound,
 } from "lucide-react"
@@ -21,6 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { DEFAULT_PROJECT_ID } from "@/lib/project-data"
 import { cn } from "@/lib/utils"
 
 export const navigation = [
@@ -46,14 +47,20 @@ function Brand({ progress }: { progress: number }) {
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
-  const { progress } = useDashboard()
+  const { progress, activeProject } = useDashboard()
   const { user, has, logout } = useAuth()
+  const [projectExpanded, setProjectExpanded] = React.useState(true)
   const visibleNavigation = navigation.filter((item) => has(item.feature))
   const platformItems = visibleNavigation.filter((item) => item.group === "platform")
-  const projectItems = visibleNavigation.filter((item) => item.group === "project")
+  const allProjectItems = visibleNavigation.filter((item) => item.group === "project")
   const adminItems = visibleNavigation.filter((item) => item.group === "admin")
+  const legacyProject = activeProject?.id === DEFAULT_PROJECT_ID
+  const projectItems = legacyProject
+    ? allProjectItems
+    : allProjectItems.filter((item) => item.feature === "projetos")
   const initials = (user?.displayName || user?.username || "DR")
     .split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()
+
   const links = (items: typeof visibleNavigation, inset = false) => items.map(({ href, title, icon: Icon }) => {
     const active = href === "/" ? pathname === "/" : pathname === href
     return <Link href={href} onClick={onNavigate} key={href} className={cn(
@@ -72,9 +79,42 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <ScrollArea className="min-h-0 flex-1">
       <nav className="space-y-6 p-3 pb-7">
         {platformItems.length > 0 && <section><p className="px-3 pb-2 text-[9px] font-semibold uppercase tracking-[.18em] text-zinc-700">Plataforma</p><div className="space-y-1">{links(platformItems)}</div></section>}
-        {projectItems.length > 0 && <section>
-          <ProjectSwitcher onNavigate={onNavigate}/>
-          <div className="mt-2 space-y-1">{links(projectItems, true)}</div>
+        {allProjectItems.length > 0 && <section>
+          <p className="px-3 pb-2 text-[9px] font-semibold uppercase tracking-[.18em] text-zinc-700">Projeto</p>
+          <div className="overflow-hidden rounded-xl border border-white/[.08] bg-white/[.02]">
+            <button
+              type="button"
+              onClick={() => setProjectExpanded((current) => !current)}
+              className="flex w-full items-center gap-2 px-3 py-3 text-left transition hover:bg-white/[.025]"
+            >
+              <FolderOpen className="size-3.5 shrink-0 text-primary"/>
+              <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-zinc-200">
+                {activeProject?.name || "Carregando projeto…"}
+              </span>
+              <ChevronDown className={cn("size-3.5 shrink-0 text-zinc-600 transition-transform", projectExpanded && "rotate-180")}/>
+            </button>
+            {projectExpanded ? <div className="border-t border-white/[.06] p-2">
+              <ProjectSwitcher compact onNavigate={onNavigate}/>
+              <div className="mt-2 space-y-1">{links(projectItems)}</div>
+              {!legacyProject && activeProject?.stages.length ? <div className="mt-3 border-t border-white/[.05] pt-2">
+                <p className="px-2 pb-1.5 text-[8px] font-semibold uppercase tracking-[.16em] text-zinc-700">Etapas</p>
+                {activeProject.stages
+                  .slice()
+                  .sort((a, b) => a.order - b.order)
+                  .map((stage) => <Link
+                    key={stage.id}
+                    href={"/projetos#stage-" + stage.id}
+                    onClick={onNavigate}
+                    className="flex min-h-8 items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] text-zinc-600 transition hover:bg-sidebar-accent hover:text-zinc-300"
+                  >
+                    <span className="grid size-5 shrink-0 place-items-center rounded-md border border-white/[.06] text-[8px] text-zinc-700">
+                      {String(stage.order).padStart(2, "0")}
+                    </span>
+                    <span className="truncate">{stage.name}</span>
+                  </Link>)}
+              </div> : null}
+            </div> : null}
+          </div>
         </section>}
         {adminItems.length > 0 && <section><p className="px-3 pb-2 text-[9px] font-semibold uppercase tracking-[.18em] text-zinc-700">Administração</p><div className="space-y-1">{links(adminItems)}</div></section>}
       </nav>

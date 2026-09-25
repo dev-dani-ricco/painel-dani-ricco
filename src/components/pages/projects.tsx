@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import {
-  CalendarDays, CirclePlus, GripVertical, LoaderCircle,
+  CalendarDays, CirclePlus, Columns3, GripVertical, ListTodo, LoaderCircle,
   Plus, Target, Users,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -25,6 +25,7 @@ export function ProjectsPage() {
   const [defaultStageId, setDefaultStageId] = React.useState("")
   const [stageName, setStageName] = React.useState("")
   const [stageSaving, setStageSaving] = React.useState(false)
+  const [view, setView] = React.useState<"kanban" | "list" | "calendar">("kanban")
 
   if (!activeProject) {
     return <div className="flex min-h-[50vh] items-center justify-center text-sm text-zinc-500">
@@ -118,34 +119,48 @@ export function ProjectsPage() {
     </section>
 
     <section>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <p className="eyebrow">KANBAN</p>
-
+          <p className="eyebrow">EXECUÇÃO</p>
           <h2 className="mt-1 text-xl font-semibold">Fluxo do projeto</h2>
-          <p className="mt-1 text-xs text-zinc-600">Arraste os cards entre as etapas como em um quadro Trello.</p>
+          <p className="mt-1 text-xs text-zinc-600">Os mesmos cards podem ser acompanhados em Kanban, Lista ou Calendário.</p>
         </div>
-        <div className="flex w-full gap-2 sm:w-auto">
-          <Input
-            value={stageName}
-            onChange={(event) => setStageName(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault()
-                void addStage()
-              }
-            }}
-            className="min-w-0 sm:w-48"
-            placeholder="Nova etapa"
-          />
-          <Button variant="outline" disabled={!stageName.trim() || stageSaving} onClick={() => void addStage()}>
-            {stageSaving ? <LoaderCircle className="animate-spin"/> : <CirclePlus/>}
-            <span className="hidden sm:inline">Adicionar etapa</span>
-          </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="grid grid-cols-3 rounded-lg border border-white/[.08] bg-black/15 p-1">
+            <Button type="button" size="sm" variant={view === "kanban" ? "secondary" : "ghost"} onClick={() => setView("kanban")}>
+              <Columns3/>Kanban
+            </Button>
+            <Button type="button" size="sm" variant={view === "list" ? "secondary" : "ghost"} onClick={() => setView("list")}>
+              <ListTodo/>Lista
+            </Button>
+            <Button type="button" size="sm" variant={view === "calendar" ? "secondary" : "ghost"} onClick={() => setView("calendar")}>
+              <CalendarDays/>Calendário
+            </Button>
+          </div>
+          {view === "kanban" ? <div className="flex gap-2">
+            <Input
+              value={stageName}
+              onChange={(event) => setStageName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault()
+                  void addStage()
+                }
+              }}
+              className="min-w-0 sm:w-44"
+              placeholder="Nova etapa"
+            />
+            <Button variant="outline" disabled={!stageName.trim() || stageSaving} onClick={() => void addStage()}>
+              {stageSaving ? <LoaderCircle className="animate-spin"/> : <CirclePlus/>}
+              <span className="hidden 2xl:inline">Adicionar etapa</span>
+            </Button>
+          </div> : <Button variant="outline" onClick={() => openCard(stages[0]?.id || "")} disabled={!stages.length}>
+            <Plus/>Novo card
+          </Button>}
         </div>
       </div>
 
-      <div className="overflow-x-auto pb-4">
+      {view === "kanban" ? <div className="overflow-x-auto pb-4">
         <div className="flex min-w-max items-start gap-3">
           {stages.map((stage) => {
             const cards = activeProject.cards.filter((card) => card.stageId === stage.id)
@@ -160,7 +175,11 @@ export function ProjectsPage() {
             />
           })}
         </div>
-      </div>
+      </div> : view === "list" ? (
+        <ProjectListView stages={stages} cards={activeProject.cards} onMove={moveCard}/>
+      ) : (
+        <ProjectCalendarView stages={stages} cards={activeProject.cards}/>
+      )}
     </section>
 
     <NewCardDialog
@@ -168,6 +187,87 @@ export function ProjectsPage() {
       onOpenChange={setCardOpen}
       stageId={defaultStageId || stages[0]?.id || ""}
     />
+  </div>
+}
+
+function ProjectListView({
+  stages,
+  cards,
+  onMove,
+}: {
+  stages: ProjectStage[]
+  cards: ProjectCard[]
+  onMove: (cardId: string, stageId: string) => Promise<void>
+}) {
+  const stageMap = new Map(stages.map((stage) => [stage.id, stage.name]))
+  const ordered = [...cards].sort((a, b) => (a.dueDate || "9999-99-99").localeCompare(b.dueDate || "9999-99-99"))
+
+  if (!ordered.length) {
+    return <EmptyProjectView title="Nenhum card no projeto" description="Crie o primeiro card para começar a execução."/>
+  }
+
+  return <div className="overflow-hidden rounded-xl border border-white/[.07] bg-[#111]">
+    <div className="hidden grid-cols-[minmax(0,2fr)_minmax(150px,1fr)_130px_110px_150px] gap-3 border-b border-white/[.06] px-4 py-2.5 text-[9px] font-semibold uppercase tracking-[.14em] text-zinc-700 md:grid">
+      <span>Card</span><span>Responsável</span><span>Prazo</span><span>Prioridade</span><span>Etapa</span>
+    </div>
+    {ordered.map((card) => <div key={card.id} className="grid gap-2 border-b border-white/[.05] px-4 py-3 last:border-b-0 md:grid-cols-[minmax(0,2fr)_minmax(150px,1fr)_130px_110px_150px] md:items-center md:gap-3">
+      <div className="min-w-0">
+        <p className="truncate text-xs font-semibold text-zinc-200">{card.title}</p>
+        {card.description ? <p className="mt-1 line-clamp-1 text-[10px] text-zinc-600">{card.description}</p> : null}
+      </div>
+      <span className="text-[11px] text-zinc-500">{card.owner || "Sem responsável"}</span>
+      <span className="text-[11px] text-zinc-500">{card.dueDate ? formatDate(card.dueDate) : "Sem prazo"}</span>
+      <span className={priorityClass(card.priority)}>{card.priority}</span>
+      <Select value={card.stageId} onValueChange={(stageId) => void onMove(card.id, stageId)}>
+        <SelectTrigger className="h-8 w-full border-white/[.08] bg-black/20 text-[10px]"><SelectValue placeholder={stageMap.get(card.stageId)}/></SelectTrigger>
+        <SelectContent>{stages.map((stage) => <SelectItem key={stage.id} value={stage.id}>{stage.name}</SelectItem>)}</SelectContent>
+      </Select>
+    </div>)}
+  </div>
+}
+
+function ProjectCalendarView({ stages, cards }: { stages: ProjectStage[]; cards: ProjectCard[] }) {
+  const stageMap = new Map(stages.map((stage) => [stage.id, stage.name]))
+  const groups = cards.reduce<Record<string, ProjectCard[]>>((acc, card) => {
+    const key = card.dueDate || "sem-data"
+    ;(acc[key] ||= []).push(card)
+    return acc
+  }, {})
+  const dates = Object.keys(groups).sort((a, b) => {
+    if (a === "sem-data") return 1
+    if (b === "sem-data") return -1
+    return a.localeCompare(b)
+  })
+
+  if (!dates.length) {
+    return <EmptyProjectView title="Calendário vazio" description="Os cards com prazo aparecerão organizados por data aqui."/>
+  }
+
+  return <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+    {dates.map((date) => <div key={date} className="rounded-xl border border-white/[.07] bg-[#111] p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <CalendarDays className="size-3.5 text-primary"/>
+        <p className="text-xs font-semibold">{date === "sem-data" ? "Sem data definida" : formatDate(date)}</p>
+        <span className="ml-auto text-[9px] text-zinc-700">{groups[date].length} card(s)</span>
+      </div>
+      <div className="space-y-2">
+        {groups[date].map((card) => <div key={card.id} className="rounded-lg border border-white/[.06] bg-black/20 p-3">
+          <p className="text-xs font-semibold leading-5 text-zinc-200">{card.title}</p>
+          <div className="mt-2 flex flex-wrap gap-2 text-[9px] text-zinc-600">
+            <span>{stageMap.get(card.stageId) || "Etapa"}</span>
+            {card.owner ? <span>· {card.owner}</span> : null}
+            <span className={priorityClass(card.priority)}>{card.priority}</span>
+          </div>
+        </div>)}
+      </div>
+    </div>)}
+  </div>
+}
+
+function EmptyProjectView({ title, description }: { title: string; description: string }) {
+  return <div className="rounded-xl border border-dashed border-white/[.08] bg-[#111] px-5 py-12 text-center">
+    <p className="text-sm font-semibold text-zinc-300">{title}</p>
+    <p className="mt-1 text-xs text-zinc-600">{description}</p>
   </div>
 }
 
@@ -187,7 +287,8 @@ function KanbanColumn({
   onMoveCard: (cardId: string, stageId: string) => void
 }) {
   return <div
-    className="w-[292px] shrink-0 rounded-xl border border-white/[.07] bg-[#111] p-3"
+    id={"stage-" + stage.id}
+    className="w-[292px] shrink-0 scroll-mt-24 rounded-xl border border-white/[.07] bg-[#111] p-3"
     onDragOver={(event) => event.preventDefault()}
     onDrop={(event) => {
       event.preventDefault()

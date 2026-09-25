@@ -30,7 +30,7 @@ const stageTemplates: Record<string, string[]> = {
   "Outro": defaultStages,
 }
 
-export function ProjectSwitcher({ onNavigate }: { onNavigate?: () => void }) {
+export function ProjectSwitcher({ onNavigate, compact = false }: { onNavigate?: () => void; compact?: boolean }) {
   const router = useRouter()
   const { user } = useAuth()
   const { projects, activeProject, activeProjectId, setActiveProject, createProject } = useDashboard()
@@ -46,23 +46,31 @@ export function ProjectSwitcher({ onNavigate }: { onNavigate?: () => void }) {
   return <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="w-full rounded-xl border border-white/[.08] bg-white/[.025] px-3 py-3 text-left transition hover:border-primary/25 hover:bg-white/[.04]">
-          <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[.18em] text-zinc-600">
-            <FolderOpen className="size-3.5 text-primary"/>
-            Projeto
-            <ChevronDown className="ml-auto size-3.5"/>
-          </div>
-          <div className="mt-1.5 flex items-start gap-2">
-            <p className="min-w-0 flex-1 line-clamp-2 text-[11px] font-semibold leading-4 text-zinc-200">
-              {activeProject?.name || "Carregando projeto…"}
-            </p>
-            {activeProject?.status ? (
-              <span className="shrink-0 rounded-full border border-white/[.08] px-1.5 py-0.5 text-[8px] text-zinc-600">
-                {activeProject.status}
-              </span>
-            ) : null}
-          </div>
-        </button>
+        {compact ? (
+          <button className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-zinc-600 transition hover:bg-sidebar-accent hover:text-zinc-300">
+            <Columns3 className="size-3.5 shrink-0"/>
+            <span className="min-w-0 flex-1 truncate">Trocar projeto</span>
+            <ChevronDown className="size-3.5 shrink-0"/>
+          </button>
+        ) : (
+          <button className="w-full rounded-xl border border-white/[.08] bg-white/[.025] px-3 py-3 text-left transition hover:border-primary/25 hover:bg-white/[.04]">
+            <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[.18em] text-zinc-600">
+              <FolderOpen className="size-3.5 text-primary"/>
+              Projeto
+              <ChevronDown className="ml-auto size-3.5"/>
+            </div>
+            <div className="mt-1.5 flex items-start gap-2">
+              <p className="min-w-0 flex-1 line-clamp-2 text-[11px] font-semibold leading-4 text-zinc-200">
+                {activeProject?.name || "Carregando projeto…"}
+              </p>
+              {activeProject?.status ? (
+                <span className="shrink-0 rounded-full border border-white/[.08] px-1.5 py-0.5 text-[8px] text-zinc-600">
+                  {activeProject.status}
+                </span>
+              ) : null}
+            </div>
+          </button>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-72 border-white/10" align="start">
         <DropdownMenuLabel>Projetos</DropdownMenuLabel>
