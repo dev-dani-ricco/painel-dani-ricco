@@ -1,69 +1,74 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { routeFeature } from "@/lib/auth-config"
+import { SESSION_COOKIE, verifySession } from "@/lib/auth-session"
 
-function unauthorized() {
-  return new NextResponse("Authentication required", {
-    status: 401,
-    headers: {
-      "WWW-Authenticate": 'Basic realm="Dani Ricco Intelligence", charset="UTF-8"',
-      "Cache-Control": "no-store",
-      "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet, noimageindex",
-    },
-  })
+const PUBLIC_HOSTS = new Set([
+  "daniricco.com.br",
+  "www.daniricco.com.br",
+  "bio.daniricco.com.br",
+])
+
+function noIndex(response: NextResponse) {
+  response.headers.set(
+    "X-Robots-Tag",
+    "noindex, nofollow, noarchive, nosnippet, noimageindex",
+  )
+  response.headers.set("Cache-Control", "no-store")
+  return response
 }
-
-function knowledgeAccessAllowed(request: NextRequest) {
-  const expectedUser = process.env.DANI_PANEL_USER
-  const expectedPassword = process.env.DANI_PANEL_PASSWORD
-
-  if (!expectedUser || !expectedPassword) {
-    return process.env.NODE_ENV !== "production"
-  }
-
-  const authorization = request.headers.get("authorization")
-  if (!authorization?.startsWith("Basic ")) return false
-
-  try {
-    const decoded = atob(authorization.slice(6))
-    const separator = decoded.indexOf(":")
-    if (separator < 0) return false
-    const user = decoded.slice(0, separator)
-    const password = decoded.slice(separator + 1)
-    return user === expectedUser && password === expectedPassword
-  } catch {
-    return false
-  }
-}
-
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
-  const protectedKnowledge =
-    pathname === "/inteligencia" ||
-    pathname.startsWith("/api/knowledge/")
-
-  if (protectedKnowledge && !knowledgeAccessAllowed(request)) {
-    return unauthorized()
-  }
-
-  const routedHost =
+  const routedHost = (
     request.headers.get("x-dani-ricco-host") ||
     request.headers.get("x-forwarded-host") ||
     request.headers.get("host") ||
     ""
+  ).split(":")[0].toLowerCase()
 
-  const response = NextResponse.next()
-
-  if (
-    protectedKnowledge ||
-    routedHost.toLowerCase().startsWith("painel.daniricco.com.br")
-  ) {
-    response.headers.set(
-      "X-Robots-Tag",
-      "noindex, nofollow, noarchive, nosnippet, noimageindex",
-    )
-    response.headers.set("Cache-Control", "no-store")
+  const publicHost = PUBLIC_HOSTS.has(routedHost)
+  const publicPath =
+    pathname.startsWith("/site") ||
+    pathname.startsWith("/bio") ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/sem-acesso")
+  if (publicHost || publicPath) {
+    return pathname.startsWith("/login") || pathname.startsWith("/sem-acesso")
+      ? noIndex(NextResponse.next())
+      : NextResponse.next()
   }
 
-  return response
+  const publicAuthApi =
+    pathname === "/api/auth/login" ||
+    pathname === "/api/auth/logout" ||
+    pathname === "/api/auth/me"
+
+  if (publicAuthApi) return noIndex(NextResponse.next())
+
+  const session = await verifySession(request.cookies.get(SESSION_COOKIE)?.value)
+  const isApi = pathname.startsWith("/api/")
+
+  if (!session) {
+    if (isApi) {
+      return noIndex(NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 }))
+    }
+    const login = request.nextUrl.clone()
+    login.pathname = "/login"
+    login.searchParams.set("next", pathname)
+    return noIndex(NextResponse.redirect(login))
+  }
+
+  const feature = routeFeature(pathname)
+  if (feature && !session.permissions.includes(feature)) {
+    if (isApi) {
+      return noIndex(NextResponse.json({ error: "FORBIDDEN" }, { status: 403 }))
+    }
+    const denied = request.nextUrl.clone()
+    denied.pathname = "/sem-acesso"
+    denied.search = ""
+    return noIndex(NextResponse.redirect(denied))
+  }
+
+  return noIndex(NextResponse.next())
 }
 
 export const config = {

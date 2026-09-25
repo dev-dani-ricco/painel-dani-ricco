@@ -46,3 +46,6 @@ next-env.d.ts
 
 # AI agent local history
 .aider.chat.history.md
+
+# local bootstrap credentials
+.local-auth-credentials.txt
