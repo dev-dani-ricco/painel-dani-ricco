@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getEffectivePermissions, getUserById, updateUserPassword } from "@/lib/auth-db"
-import { hashPassword, passwordPolicyError, verifyPassword } from "@/lib/auth-password"
+import { hashPassword, passwordPolicyError, verifyPassword, verifyTemporaryPassword } from "@/lib/auth-password"
 import { currentSession } from "@/lib/auth-server"
 import { SESSION_COOKIE, SESSION_MAX_AGE, signSession } from "@/lib/auth-session"
 
@@ -17,6 +17,7 @@ export async function POST(request: Request) {
       newPassword?: string
       confirmPassword?: string
     }
+
     const currentPassword = body.currentPassword ?? ""
     const newPassword = body.newPassword ?? ""
     const confirmPassword = body.confirmPassword ?? ""
@@ -27,6 +28,7 @@ export async function POST(request: Request) {
     if (newPassword !== confirmPassword) {
       return NextResponse.json({ error: "As novas senhas não coincidem." }, { status: 400 })
     }
+
     const policyError = passwordPolicyError(newPassword)
     if (policyError) {
       return NextResponse.json({ error: policyError }, { status: 400 })
@@ -36,11 +38,15 @@ export async function POST(request: Request) {
     if (!user || !user.active) {
       return NextResponse.json({ error: "Usuário não disponível." }, { status: 404 })
     }
-    const currentValid = await verifyPassword(
-      currentPassword,
-      user.password_salt,
-      user.password_hash,
-    )
+
+    const currentValid =
+      verifyTemporaryPassword(currentPassword, user.must_change_password) ||
+      await verifyPassword(
+        currentPassword,
+        user.password_salt,
+        user.password_hash,
+      )
+
     if (!currentValid) {
       return NextResponse.json({ error: "A senha atual está incorreta." }, { status: 400 })
     }
@@ -62,6 +68,7 @@ export async function POST(request: Request) {
       mustChangePassword: false,
     })
     if (!updated) throw new Error("USER_NOT_FOUND")
+
     const permissions = await getEffectivePermissions(updated.id, updated.role)
     const token = await signSession({
       sub: updated.id,
