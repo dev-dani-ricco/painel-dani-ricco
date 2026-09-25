@@ -3,6 +3,11 @@ import { promisify } from "node:util"
 
 const scrypt = promisify(scryptCallback)
 const KEY_LENGTH = 64
+export const TEMPORARY_PASSWORD = "12345678"
+
+export function verifyTemporaryPassword(password: string, mustChangePassword: boolean) {
+  return mustChangePassword && password === TEMPORARY_PASSWORD
+}
 
 export function passwordPolicyError(password: string) {
   if (password.length < 12) return "A senha deve ter pelo menos 12 caracteres."
