@@ -4,10 +4,15 @@ import Image from "next/image"
 import * as React from "react"
 import {
   AudioLines, BrainCircuit, CheckCircle2, FileText, Image as ImageIcon,
-  LoaderCircle, Mic, MicOff, Paperclip, RefreshCw, Send, Sparkles, Tags, Upload,
+  LoaderCircle, Mic, MicOff, Paperclip, RefreshCw, Send, Sparkles, Tags, Trash2, Upload,
 } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import { PwaInstallButton } from "@/components/pwa-install-button"
+import {
+  MemoryAuditPanel,
+  MemoryDeleteDialog,
+  type DeletableMemory,
+} from "@/components/memory-governance"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -55,6 +60,26 @@ type ChatMessage = {
   sources?: Array<{ marker: string; title: string; excerpt: string }>
 }
 
+type SpeechRecognitionLike = {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  start: () => void
+  stop: () => void
+  abort: () => void
+  onresult: ((event: {
+    resultIndex: number
+    results: ArrayLike<{
+      isFinal: boolean
+      0: { transcript: string }
+    }>
+  }) => void) | null
+  onerror: ((event: { error: string }) => void) | null
+  onend: (() => void) | null
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike
+
 function sourceIcon(kind: CloneSource["kind"]) {
   if (kind === "audio") return AudioLines
   if (kind === "image") return ImageIcon
@@ -97,8 +122,12 @@ export function IntelligencePage() {
   const [notice, setNotice] = React.useState("")
   const [engine, setEngine] = React.useState("fallback")
   const [recording, setRecording] = React.useState(false)
+  const [deleteTarget, setDeleteTarget] = React.useState<DeletableMemory | null>(null)
+  const [auditRefresh, setAuditRefresh] = React.useState(0)
   const recorderRef = React.useRef<MediaRecorder | null>(null)
   const chunksRef = React.useRef<Blob[]>([])
+  const speechRecognitionRef = React.useRef<SpeechRecognitionLike | null>(null)
+  const speechTranscriptRef = React.useRef("")
   const fileInputRef = React.useRef<HTMLInputElement | null>(null)
   const chatEndRef = React.useRef<HTMLDivElement | null>(null)
 
@@ -194,6 +223,10 @@ export function IntelligencePage() {
 
       if (file.type.startsWith("audio/") && body.processing?.status === "ready") {
         setNotice("Áudio transcrito e incorporado ao clone com sucesso.")
+      } else if (body.processing?.warning === "AI_GATEWAY_BILLING_REQUIRED") {
+        setNotice(
+          "Áudio recebido, mas a transcrição de arquivo está pendente porque o AI Gateway da Vercel ainda exige liberação de cobrança. Gravações ao vivo usam a transcrição do navegador quando disponível.",
+        )
       } else if (body.processing?.warning) {
         setNotice("Conteúdo recebido. Parte do processamento inteligente ficou pendente.")
       } else {
@@ -201,6 +234,36 @@ export function IntelligencePage() {
       }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Falha no envio")
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function saveBrowserAudioTranscript(transcript: string) {
+    const content = transcript.trim()
+    if (!content) return false
+
+    setUploading(true)
+    setNotice("Transcrição capturada. Incorporando ao clone…")
+    try {
+      const response = await fetch("/api/knowledge/sources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "audio",
+          sourceMode: "browser-audio-transcript",
+          title: "Áudio · " + new Date().toLocaleString("pt-BR"),
+          content,
+        }),
+      })
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.error || "Falha ao salvar transcrição.")
+      await loadPulse(promptOffset)
+      setNotice("Áudio transcrito no navegador e incorporado ao clone com sucesso.")
+      return true
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao salvar transcrição.")
+      return false
     } finally {
       setUploading(false)
     }
@@ -246,6 +309,7 @@ export function IntelligencePage() {
 
   async function toggleRecording() {
     if (recording) {
+      speechRecognitionRef.current?.stop()
       recorderRef.current?.stop()
       return
     }
@@ -257,6 +321,54 @@ export function IntelligencePage() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       chunksRef.current = []
+      speechTranscriptRef.current = ""
+
+      const speechWindow = window as typeof window & {
+        SpeechRecognition?: SpeechRecognitionConstructor
+        webkitSpeechRecognition?: SpeechRecognitionConstructor
+      }
+      const SpeechRecognitionApi =
+        speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition
+
+      let recognition: SpeechRecognitionLike | null = null
+      if (SpeechRecognitionApi) {
+        recognition = new SpeechRecognitionApi()
+        recognition.continuous = true
+        recognition.interimResults = true
+        recognition.lang = "pt-BR"
+        recognition.onresult = (event) => {
+          let finalText = ""
+          for (let index = event.resultIndex; index < event.results.length; index += 1) {
+            const result = event.results[index]
+            if (result.isFinal) finalText += result[0]?.transcript || ""
+          }
+          if (finalText.trim()) {
+            speechTranscriptRef.current +=
+              (speechTranscriptRef.current ? " " : "") + finalText.trim()
+          }
+        }
+        recognition.onerror = (event) => {
+          if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+            speechRecognitionRef.current = null
+          }
+        }
+        recognition.onend = () => {
+          if (recorderRef.current?.state === "recording") {
+            try {
+              recognition?.start()
+            } catch {
+              // Browser may reject immediate restarts; the audio file remains the fallback.
+            }
+          }
+        }
+        try {
+          recognition.start()
+          speechRecognitionRef.current = recognition
+        } catch {
+          speechRecognitionRef.current = null
+        }
+      }
+
       const preferred = [
         "audio/webm;codecs=opus",
         "audio/webm",
@@ -269,27 +381,51 @@ export function IntelligencePage() {
         if (event.data.size) chunksRef.current.push(event.data)
       }
       recorder.onerror = () => {
+        speechRecognitionRef.current?.abort()
+        speechRecognitionRef.current = null
         stream.getTracks().forEach((track) => track.stop())
         setRecording(false)
         setNotice("A gravação foi interrompida pelo navegador. Tente novamente.")
       }
       recorder.onstop = () => {
+        speechRecognitionRef.current?.stop()
+        speechRecognitionRef.current = null
+
         const mimeType = recorder.mimeType || preferred || "audio/webm"
         const blob = new Blob(chunksRef.current, { type: mimeType })
+        const browserTranscript = speechTranscriptRef.current.trim()
         stream.getTracks().forEach((track) => track.stop())
         setRecording(false)
+
+        if (browserTranscript) {
+          void saveBrowserAudioTranscript(browserTranscript)
+          return
+        }
+
         if (!blob.size) {
           setNotice("Nenhum áudio foi capturado.")
           return
         }
+
         const extension = mimeType.includes("mp4") ? "m4a" : "webm"
-        const file = new File([blob], "memoria-dani-" + Date.now() + "." + extension, { type: mimeType })
+        const file = new File(
+          [blob],
+          "memoria-dani-" + Date.now() + "." + extension,
+          { type: mimeType },
+        )
+        setNotice(
+          "O navegador não gerou transcrição local. Tentando o serviço de transcrição do servidor…",
+        )
         void uploadFile(file)
       }
 
       recorder.start(1000)
       setRecording(true)
-      setNotice("Gravando… fale naturalmente e toque no microfone novamente para concluir.")
+      setNotice(
+        SpeechRecognitionApi
+          ? "Gravando e transcrevendo ao vivo… toque no microfone novamente para concluir."
+          : "Gravando… este navegador não oferece transcrição ao vivo; o servidor tentará processar ao concluir.",
+      )
     } catch {
       setNotice("Não foi possível acessar o microfone. Verifique a permissão do navegador.")
     }
@@ -301,6 +437,9 @@ export function IntelligencePage() {
 
   const stats = pulse?.stats
   const recent = pulse?.recent || []
+  const canDeleteMemories = ["DANI", "TIBROKER"].includes(
+    user?.username?.toUpperCase() || "",
+  )
 
   return (
     <div className="overflow-hidden rounded-2xl border border-white/[.07] bg-[#0b0b0b]">
@@ -564,6 +703,22 @@ export function IntelligencePage() {
                             {String(metadata.contributor || source.kind)} · {new Date(source.created_at).toLocaleDateString("pt-BR")}
                           </p>
                         </div>
+                        {canDeleteMemories && (
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget({
+                              id: source.id,
+                              title: source.title,
+                              kind: source.kind,
+                              created_at: source.created_at,
+                              metadata: source.metadata || {},
+                            })}
+                            className="grid size-7 shrink-0 place-items-center rounded-lg text-zinc-700 transition hover:bg-red-500/[.06] hover:text-red-400"
+                            title="Apagar memória"
+                          >
+                            <Trash2 className="size-3.5"/>
+                          </button>
+                        )}
                       </div>
                       <div className="mt-2 flex flex-wrap gap-1">
                         {metadata.topicLabel ? <Chip>{String(metadata.topicLabel)}</Chip> : null}
@@ -575,9 +730,23 @@ export function IntelligencePage() {
                 })}
               </div>
             </section>
+            {canDeleteMemories && <MemoryAuditPanel refreshToken={auditRefresh}/>}
           </div>
         </aside>
       </div>
+
+      <MemoryDeleteDialog
+        source={deleteTarget}
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+        onDeleted={async () => {
+          setDeleteTarget(null)
+          setAuditRefresh((value) => value + 1)
+          await loadPulse(promptOffset)
+        }}
+      />
     </div>
   )
 }

@@ -40,27 +40,43 @@ export async function processKnowledgeFile(file: File, request?: Request): Promi
   }
 
   if (file.type.startsWith("audio/")) {
-    if (ai.source === "vercel-gateway") {
-      const gateway = createGateway({ apiKey: ai.authToken })
-      const result = await transcribe({
-        model: gateway.transcriptionModel("openai/gpt-4o-transcribe"),
-        audio: Buffer.from(await file.arrayBuffer()),
+    try {
+      if (ai.source === "vercel-gateway") {
+        const gateway = createGateway({ apiKey: ai.authToken })
+        const result = await transcribe({
+          model: gateway.transcriptionModel("openai/gpt-4o-transcribe"),
+          audio: Buffer.from(await file.arrayBuffer()),
+        })
+        return {
+          extractedText: result.text,
+          status: "ready",
+          processor: "vercel-ai-gateway-transcription",
+        }
+      }
+
+      const transcription = await ai.client.audio.transcriptions.create({
+        file,
+        model: process.env.OPENAI_TRANSCRIPTION_MODEL || "gpt-4o-transcribe",
       })
       return {
-        extractedText: result.text,
+        extractedText: transcription.text,
         status: "ready",
-        processor: "vercel-ai-gateway-transcription",
+        processor: "openai-audio-transcription",
       }
-    }
-
-    const transcription = await ai.client.audio.transcriptions.create({
-      file,
-      model: process.env.OPENAI_TRANSCRIPTION_MODEL || "gpt-4o-transcribe",
-    })
-    return {
-      extractedText: transcription.text,
-      status: "ready",
-      processor: "openai-audio-transcription",
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error)
+      if (
+        ai.source === "vercel-gateway" &&
+        /credit card|customer_verification_required|verification_required|billing/i.test(detail)
+      ) {
+        return {
+          extractedText: null,
+          status: "stored",
+          processor: "vercel-ai-gateway-transcription",
+          warning: "AI_GATEWAY_BILLING_REQUIRED",
+        }
+      }
+      throw error
     }
   }
   if (file.type.startsWith("image/")) {

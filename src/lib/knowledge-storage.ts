@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import { put } from "@vercel/blob"
+import { del, put } from "@vercel/blob"
 
 export type StoredKnowledgeFile = {
   provider: "vercel-blob" | "local" | "ephemeral"
@@ -45,5 +45,20 @@ export async function storeKnowledgeFile(args: {
       provider: "local",
       path: target,
     }
+  }
+}
+
+
+export async function deleteStoredKnowledgeFile(path: string | null) {
+  if (!path) return { deleted: false, reason: "NO_STORED_FILE" as const }
+  const blobConfigured = Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID)
+  if (!blobConfigured) return { deleted: false, reason: "BLOB_NOT_CONFIGURED" as const }
+
+  try {
+    await del(path)
+    return { deleted: true, reason: null }
+  } catch (error) {
+    console.error("knowledge original delete failed", error)
+    return { deleted: false, reason: "BLOB_DELETE_FAILED" as const }
   }
 }

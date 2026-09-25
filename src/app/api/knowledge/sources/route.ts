@@ -38,6 +38,8 @@ export async function POST(request: Request) {
         projectId?: string
         title?: string
         content?: string
+        kind?: "note" | "audio"
+        sourceMode?: "direct-memory" | "browser-audio-transcript"
       }
       const projectId = body.projectId?.trim() || "dani-clone"
       const content = body.content?.trim()
@@ -50,18 +52,22 @@ export async function POST(request: Request) {
         text: content,
         title: body.title?.trim() || content.slice(0, 80),
       })
+      const kind = body.kind === "audio" ? "audio" : "note"
+      const sourceMode = body.sourceMode === "browser-audio-transcript"
+        ? "browser-audio-transcript"
+        : "direct-memory"
       const source = await createKnowledgeSource({
         projectId,
-        kind: "note",
+        kind,
         title: body.title?.trim() || content.slice(0, 80),
         status: "ready",
         extractedText: content,
         metadata: {
-          processor: "operator-note",
+          processor: kind === "audio" ? "browser-speech-recognition" : "operator-note",
           ...classification,
           contributor: session?.username || null,
           contributorName: session?.displayName || null,
-          sourceMode: "direct-memory",
+          sourceMode,
         },
       })
       return NextResponse.json({ source }, { status: 201 })

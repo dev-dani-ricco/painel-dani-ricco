@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto"
+import { createHash, randomUUID } from "node:crypto"
 import { getSql } from "@/lib/db"
 
 let knowledgeSchemaPromise: Promise<void> | null = null
@@ -62,6 +62,47 @@ export function ensureKnowledgeSchema() {
         source_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
+    `
+    await sql`
+      CREATE TABLE IF NOT EXISTS dani_knowledge_audit (
+        id TEXT PRIMARY KEY,
+        action TEXT NOT NULL,
+        source_id TEXT NOT NULL,
+        source_title TEXT NOT NULL,
+        source_kind TEXT NOT NULL,
+        source_project_id TEXT NOT NULL,
+        source_original_filename TEXT,
+        source_mime_type TEXT,
+        source_storage_path TEXT,
+        source_size_bytes BIGINT,
+        source_content_length INTEGER NOT NULL DEFAULT 0,
+        source_content_sha256 TEXT,
+        source_metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+        source_created_at TIMESTAMPTZ,
+        actor_user_id TEXT NOT NULL,
+        actor_username TEXT NOT NULL,
+        actor_display_name TEXT,
+        actor_role TEXT NOT NULL,
+        actor_ip TEXT,
+        user_agent TEXT,
+        request_id TEXT,
+        reason TEXT NOT NULL,
+        confirmation_text TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `
+    await sql`
+      ALTER TABLE dani_knowledge_audit ADD COLUMN IF NOT EXISTS actor_ip TEXT
+    `
+    await sql`
+      ALTER TABLE dani_knowledge_audit ADD COLUMN IF NOT EXISTS user_agent TEXT
+    `
+    await sql`
+      ALTER TABLE dani_knowledge_audit ADD COLUMN IF NOT EXISTS request_id TEXT
+    `
+    await sql`
+      CREATE INDEX IF NOT EXISTS dani_knowledge_audit_created_idx
+      ON dani_knowledge_audit(created_at DESC)
     `
     await sql`
       CREATE INDEX IF NOT EXISTS dani_knowledge_sources_project_created_idx
@@ -274,4 +315,120 @@ export async function getCloneCoverage() {
   const coverage: Record<string, number> = {}
   for (const row of rows) coverage[row.topic] = Number(row.count)
   return coverage
+}
+
+
+export type KnowledgeAuditEntry = {
+  id: string
+  action: "delete"
+  source_id: string
+  source_title: string
+  source_kind: string
+  source_project_id: string
+  source_original_filename: string | null
+  source_mime_type: string | null
+  source_size_bytes: number | null
+  source_content_length: number
+  source_content_sha256: string | null
+  source_metadata: Record<string, unknown>
+  source_created_at: string | null
+  actor_user_id: string
+  actor_username: string
+  actor_display_name: string | null
+  actor_role: string
+  actor_ip: string | null
+  user_agent: string | null
+  request_id: string | null
+  reason: string
+  confirmation_text: string
+  created_at: string
+}
+
+export async function listKnowledgeAudit(limit = 100): Promise<KnowledgeAuditEntry[]> {
+  await ensureKnowledgeSchema()
+  const rows = await getSql()`
+    SELECT id, action, source_id, source_title, source_kind, source_project_id,
+           source_original_filename, source_mime_type, source_storage_path, source_size_bytes,
+           source_content_length, source_content_sha256, source_metadata,
+           source_created_at, actor_user_id, actor_username, actor_display_name,
+           actor_role, actor_ip, user_agent, request_id, reason, confirmation_text, created_at
+    FROM dani_knowledge_audit
+    ORDER BY created_at DESC
+    LIMIT ${Math.max(1, Math.min(limit, 250))}
+  `
+  return rows as unknown as KnowledgeAuditEntry[]
+}
+
+export async function deleteKnowledgeSourceWithAudit(input: {
+  sourceId: string
+  actor: {
+    userId: string
+    username: string
+    displayName?: string | null
+    role: string
+  }
+  reason: string
+  confirmationText: string
+  actorIp?: string | null
+  userAgent?: string | null
+  requestId?: string | null
+}) {
+  await ensureKnowledgeSchema()
+  const sql = getSql()
+  const rows = await sql`
+    SELECT id, project_id, kind, title, original_filename, mime_type,
+           size_bytes, storage_path, status, extracted_text, metadata, created_at
+    FROM dani_knowledge_sources
+    WHERE id = ${input.sourceId}
+    LIMIT 1
+  `
+  const source = (rows as unknown as KnowledgeSource[])[0]
+  if (!source) throw new Error("SOURCE_NOT_FOUND")
+
+  const text = source.extracted_text ?? ""
+  const contentHash = text
+    ? createHash("sha256").update(text, "utf8").digest("hex")
+    : null
+  const auditId = randomUUID()
+
+  await sql.transaction((tx) => [
+    tx`
+      INSERT INTO dani_knowledge_audit (
+        id, action, source_id, source_title, source_kind, source_project_id,
+        source_original_filename, source_mime_type, source_storage_path, source_size_bytes,
+        source_content_length, source_content_sha256, source_metadata,
+        source_created_at, actor_user_id, actor_username, actor_display_name,
+        actor_role, actor_ip, user_agent, request_id, reason, confirmation_text
+      ) VALUES (
+        ${auditId}, 'delete', ${source.id}, ${source.title}, ${source.kind},
+        ${source.project_id}, ${source.original_filename}, ${source.mime_type},
+        ${source.storage_path}, ${source.size_bytes}, ${text.length}, ${contentHash},
+        ${JSON.stringify(source.metadata ?? {})}::jsonb, ${source.created_at},
+        ${input.actor.userId}, ${input.actor.username},
+        ${input.actor.displayName ?? null}, ${input.actor.role},
+        ${input.actorIp ?? null}, ${input.userAgent ?? null}, ${input.requestId ?? null},
+        ${input.reason}, ${input.confirmationText}
+      )
+    `,
+    tx`
+      UPDATE dani_knowledge_messages
+      SET source_ids = source_ids - ${source.id}
+      WHERE source_ids ? ${source.id}
+    `,
+    tx`
+      DELETE FROM dani_knowledge_sources
+      WHERE id = ${source.id}
+    `,
+  ])
+
+  return {
+    auditId,
+    deletedSource: {
+      id: source.id,
+      title: source.title,
+      kind: source.kind,
+      projectId: source.project_id,
+      storagePath: source.storage_path,
+    },
+  }
 }
