@@ -9,6 +9,7 @@ import { toast } from "sonner"
 import { useAuth } from "@/components/auth-provider"
 import { useDashboard } from "@/components/data-provider"
 import { NewProjectDialog } from "@/components/project-switcher"
+import { ProjectCardDetailSheet } from "@/components/project-card-detail"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -32,6 +33,7 @@ export function ProjectsPage() {
   const [stageOpen, setStageOpen] = React.useState(false)
   const [stageSaving, setStageSaving] = React.useState(false)
   const [view, setView] = React.useState<"kanban" | "list" | "calendar">("kanban")
+  const [selectedCard, setSelectedCard] = React.useState<ProjectCard | null>(null)
 
   if (!activeProject) {
     return <div className="flex min-h-[50vh] items-center justify-center text-sm text-zinc-500">
@@ -174,6 +176,7 @@ export function ProjectsPage() {
               onAdd={() => openCard(stage.id)}
               onDropCard={(cardId) => void moveCard(cardId, stage.id)}
               onMoveCard={(cardId, nextStageId) => void moveCard(cardId, nextStageId)}
+              onOpenCard={setSelectedCard}
             />
           })}
         </div>
@@ -184,6 +187,7 @@ export function ProjectsPage() {
       )}
     </section>
 
+    <ProjectCardDetailSheet open={Boolean(selectedCard)} onOpenChange={(next) => { if (!next) setSelectedCard(null) }} project={activeProject} card={selectedCard}/>
     <NewProjectDialog
       open={newProjectOpen}
       onOpenChange={setNewProjectOpen}
@@ -354,6 +358,7 @@ function KanbanColumn({
   onAdd,
   onDropCard,
   onMoveCard,
+  onOpenCard,
 }: {
   stage: ProjectStage
   stages: ProjectStage[]
@@ -361,6 +366,7 @@ function KanbanColumn({
   onAdd: () => void
   onDropCard: (cardId: string) => void
   onMoveCard: (cardId: string, stageId: string) => void
+  onOpenCard: (card: ProjectCard) => void
 }) {
   return <div
     id={"stage-" + stage.id}
@@ -381,7 +387,7 @@ function KanbanColumn({
       <span className="text-[10px] text-zinc-700">{cards.length}</span>
     </div>
     <div className="min-h-20 space-y-2">
-      {cards.map((card) => <KanbanCard key={card.id} card={card} stages={stages} onMove={onMoveCard}/>)}
+      {cards.map((card) => <KanbanCard key={card.id} card={card} stages={stages} onMove={onMoveCard} onOpen={onOpenCard}/>)}
       {!cards.length ? (
         <div className="rounded-lg border border-dashed border-white/[.06] px-3 py-6 text-center text-[10px] text-zinc-700">
           Solte um card aqui
@@ -394,7 +400,7 @@ function KanbanColumn({
   </div>
 }
 
-function KanbanCard({ card, stages, onMove }: { card: ProjectCard; stages: ProjectStage[]; onMove: (cardId: string, stageId: string) => void }) {
+function KanbanCard({ card, stages, onMove, onOpen }: { card: ProjectCard; stages: ProjectStage[]; onMove: (cardId: string, stageId: string) => void; onOpen: (card: ProjectCard) => void }) {
   return <article
     draggable
     onDragStart={(event) => {
@@ -420,6 +426,7 @@ function KanbanCard({ card, stages, onMove }: { card: ProjectCard; stages: Proje
       {card.owner ? <span>{card.owner}</span> : null}
       {card.dueDate ? <span>· {formatDate(card.dueDate)}</span> : null}
     </div>
+    <Button type="button" size="sm" variant="ghost" className="mt-2 w-full justify-start text-[10px] text-zinc-500" onClick={() => onOpen(card)}>Abrir detalhes</Button>
     <div className="mt-3 sm:hidden">
       <Select value={card.stageId} onValueChange={(stageId) => onMove(card.id, stageId)}>
         <SelectTrigger className="h-8 w-full border-white/[.08] bg-black/20 text-[10px]"><SelectValue/></SelectTrigger>
@@ -440,6 +447,7 @@ function NewCardDialog({
 }) {
 
   const { activeProject, updateProject } = useDashboard()
+  const { user } = useAuth()
   const [title, setTitle] = React.useState("")
   const [owner, setOwner] = React.useState("")
   const [dueDate, setDueDate] = React.useState("")
@@ -467,6 +475,12 @@ function NewCardDialog({
         dueDate,
         priority,
         description: description.trim(),
+        createdBy: user?.username || user?.displayName || "",
+        mentionedUsers: [],
+        checklist: [],
+        comments: [],
+        attachments: [],
+        dependencies: [],
       }
 
       await updateProject({ id: activeProject.id, cards: [...activeProject.cards, card] })
