@@ -52,22 +52,29 @@ async function waitForServer(url, timeout = 90000) {
   throw new Error("DEV_SERVER_TIMEOUT")
 }
 
-await fs.access(path.join(process.cwd(), ".next", "BUILD_ID")).catch(() => {
-  throw new Error("QA_REQUIRES_PRODUCTION_BUILD")
-})
-const qaPort = await getFreePort()
-const baseUrl = `http://localhost:${qaPort}`
+const externalBaseUrl = process.env.QA_BASE_URL?.replace(/\/+$/, "")
+let server = null
+let baseUrl = externalBaseUrl
+
+if (!baseUrl) {
+  await fs.access(path.join(process.cwd(), ".next", "BUILD_ID")).catch(() => {
+    throw new Error("QA_REQUIRES_PRODUCTION_BUILD")
+  })
+  const qaPort = await getFreePort()
+  baseUrl = `http://localhost:${qaPort}`
+  server = spawn(process.execPath, [
+    path.join(process.cwd(), "node_modules", "next", "dist", "bin", "next"),
+    "start", "-p", String(qaPort),
+  ], { cwd: process.cwd(), stdio: ["ignore", "pipe", "pipe"], windowsHide: true })
+  server.stdout.on("data", (data) => process.stdout.write("[QA SERVER] " + data.toString()))
+  server.stderr.on("data", (data) => process.stderr.write("[QA SERVER] " + data.toString()))
+}
 
 await sql.query(
   "INSERT INTO panel_users (id, username, display_name, role, password_salt, password_hash, active, must_change_password) VALUES ($1,$2,$3,$4,$5,$6,TRUE,FALSE)",
   [userId, username, "QA Gate", "admin", salt, hash],
 )
-const server = spawn(process.execPath, [
-  path.join(process.cwd(), "node_modules", "next", "dist", "bin", "next"),
-  "start", "-p", String(qaPort),
-], { cwd: process.cwd(), stdio: ["ignore", "pipe", "pipe"], windowsHide: true })
-server.stdout.on("data", (data) => process.stdout.write("[QA SERVER] " + data.toString()))
-server.stderr.on("data", (data) => process.stderr.write("[QA SERVER] " + data.toString()))
+
 let browser
 try {
   await waitForServer(baseUrl + "/login")
@@ -115,6 +122,13 @@ try {
   const headerPosition = await page.locator("header").first().evaluate((el) => getComputedStyle(el).position)
   if (headerPosition !== "fixed") throw new Error("TOPBAR_NOT_FIXED")
 
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto(baseUrl + "/", { waitUntil: "domcontentloaded" })
+  await page.getByText("Central da Dani", { exact: true }).first().waitFor()
+  const mobileOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  if (mobileOverflow > 2) throw new Error("MOBILE_HOME_HORIZONTAL_OVERFLOW")
+  await page.setViewportSize({ width: 1440, height: 1000 })
+
   await page.goto(baseUrl + "/projetos", { waitUntil: "domcontentloaded" })
   await page.getByText("Gestão dos projetos", { exact: true }).waitFor({ state: "visible" })
   await page.getByText("Trocar projeto", { exact: true }).click()
@@ -148,20 +162,24 @@ try {
   }, { id: active.id, stages: originalStages })
   if (!restored) throw new Error("STAGE_QA_CLEANUP_FAILED")
 
+  console.log("QA_PROXY_SECURITY=PASS")
   console.log("QA_LOGIN_PERMISSIONS=PASS")
   console.log("QA_HOME_TRANSVERSAL=PASS")
   console.log("QA_ECOSYSTEM_PREVIEWS=PASS")
   console.log("QA_TOPBAR_FIXED=PASS")
+  console.log("QA_MOBILE_HOME=PASS")
   console.log("QA_PROJECT_SWITCHER=PASS")
   console.log("QA_ADD_STAGE=PASS")
   console.log("QA_CRITICAL_FLOWS=PASS")
 } finally {
   if (browser) await browser.close().catch(() => undefined)
-  if (process.platform === "win32" && server.pid) {
-    const killer = spawn("taskkill", ["/PID", String(server.pid), "/T", "/F"], { windowsHide: true })
-    await new Promise((resolve) => killer.on("close", resolve))
-  } else {
-    server.kill("SIGTERM")
+  if (server) {
+    if (process.platform === "win32" && server.pid) {
+      const killer = spawn("taskkill", ["/PID", String(server.pid), "/T", "/F"], { windowsHide: true })
+      await new Promise((resolve) => killer.on("close", resolve))
+    } else {
+      server.kill("SIGTERM")
+    }
   }
   await sql.query("DELETE FROM panel_users WHERE id = $1", [userId]).catch(() => undefined)
 }
