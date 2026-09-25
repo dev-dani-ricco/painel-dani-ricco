@@ -19,7 +19,7 @@ type AuthContextValue = {
   loading: boolean
   has: (feature: FeatureKey) => boolean
   logout: () => Promise<void>
-  refresh: () => Promise<void>
+  refresh: () => Promise<AuthUser | null>
 }
 
 const AuthContext = React.createContext<AuthContextValue | null>(null)
@@ -28,17 +28,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<AuthUser | null>(null)
   const [loading, setLoading] = React.useState(true)
 
-  const refresh = React.useCallback(async () => {
+  const refresh = React.useCallback(async (): Promise<AuthUser | null> => {
+    setLoading(true)
     try {
       const response = await fetch("/api/auth/me", { cache: "no-store" })
       if (!response.ok) {
         setUser(null)
-        return
+        return null
       }
       const body = await response.json()
-      setUser(body.user ?? null)
+      const nextUser = (body.user ?? null) as AuthUser | null
+      setUser(nextUser)
+      return nextUser
     } catch {
       setUser(null)
+      return null
     } finally {
       setLoading(false)
     }

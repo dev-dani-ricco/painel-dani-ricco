@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:invariants": "node scripts/verify-panel-invariants.mjs",
+    "qa:critical": "node scripts/qa-critical-flows.mjs",
+    "refresh:ecosystem-previews": "node scripts/refresh-ecosystem-previews.mjs"
   },
   "dependencies": {
     "@ai-sdk/gateway": "^4.0.92",

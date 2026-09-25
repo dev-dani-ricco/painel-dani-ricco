@@ -33,9 +33,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/sem-acesso") ||
     pathname === "/manifest.webmanifest" ||
     pathname === "/sw.js" ||
-    pathname === "/dani/app-icon-192.png" ||
-    pathname === "/dani/app-icon-512.png" ||
-    pathname === "/dani/apple-touch-icon.png"
+    pathname.startsWith("/dani/")
   if (publicHost || publicPath) {
     return pathname.startsWith("/login") || pathname.startsWith("/sem-acesso")
       ? noIndex(NextResponse.next())

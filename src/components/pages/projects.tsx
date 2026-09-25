@@ -29,7 +29,7 @@ export function ProjectsPage() {
   const [newProjectSaving, setNewProjectSaving] = React.useState(false)
   const canCreateProject = ["owner", "admin", "editor", "system"].includes(user?.role || "")
   const [defaultStageId, setDefaultStageId] = React.useState("")
-  const [stageName, setStageName] = React.useState("")
+  const [stageOpen, setStageOpen] = React.useState(false)
   const [stageSaving, setStageSaving] = React.useState(false)
   const [view, setView] = React.useState<"kanban" | "list" | "calendar">("kanban")
 
@@ -56,11 +56,12 @@ export function ProjectsPage() {
     }
   }
 
-  const addStage = async () => {
-    const name = stageName.trim()
-    if (!name || stageSaving) return
+  const addStage = async (rawName: string) => {
+    const name = rawName.trim()
+    if (!name || stageSaving) return false
     if (activeProject.stages.some((stage) => stage.name.toLowerCase() === name.toLowerCase())) {
-      return toast.error("Essa etapa já existe.")
+      toast.error("Essa etapa já existe.")
+      return false
     }
     setStageSaving(true)
 
@@ -70,10 +71,11 @@ export function ProjectsPage() {
         { id: crypto.randomUUID(), name, order: activeProject.stages.length + 1 },
       ]
       await updateProject({ id: activeProject.id, stages })
-      setStageName("")
       toast.success("Etapa adicionada ao projeto.")
+      return true
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Falha ao adicionar etapa")
+      return false
     } finally {
       setStageSaving(false)
     }
@@ -152,24 +154,9 @@ export function ProjectsPage() {
               <CalendarDays/>Calendário
             </Button>
           </div>
-          {view === "kanban" ? <div className="flex gap-2">
-            <Input
-              value={stageName}
-              onChange={(event) => setStageName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault()
-                  void addStage()
-                }
-              }}
-              className="min-w-0 sm:w-44"
-              placeholder="Nova etapa"
-            />
-            <Button variant="outline" disabled={!stageName.trim() || stageSaving} onClick={() => void addStage()}>
-              {stageSaving ? <LoaderCircle className="animate-spin"/> : <CirclePlus/>}
-              <span className="hidden 2xl:inline">Adicionar etapa</span>
-            </Button>
-          </div> : <Button variant="outline" onClick={() => openCard(stages[0]?.id || "")} disabled={!stages.length}>
+          {view === "kanban" ? <Button variant="outline" onClick={() => setStageOpen(true)}>
+            <CirclePlus/>Adicionar etapa
+          </Button> : <Button variant="outline" onClick={() => openCard(stages[0]?.id || "")} disabled={!stages.length}>
             <Plus/>Novo card
           </Button>}
         </div>
@@ -205,12 +192,78 @@ export function ProjectsPage() {
       onCreated={() => setNewProjectOpen(false)}
       createProject={createProject}
     />
+    <NewStageDialog
+      open={stageOpen}
+      onOpenChange={setStageOpen}
+      saving={stageSaving}
+      onSave={addStage}
+    />
     <NewCardDialog
       open={cardOpen}
       onOpenChange={setCardOpen}
       stageId={defaultStageId || stages[0]?.id || ""}
     />
   </div>
+}
+
+function NewStageDialog({
+  open,
+  onOpenChange,
+  saving,
+  onSave,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  saving: boolean
+  onSave: (name: string) => Promise<boolean>
+}) {
+  const [name, setName] = React.useState("")
+
+  const close = () => {
+    if (saving) return
+    setName("")
+    onOpenChange(false)
+  }
+
+  const save = async () => {
+    if (!name.trim() || saving) return
+    const saved = await onSave(name)
+    if (saved) {
+      setName("")
+      onOpenChange(false)
+    }
+  }
+
+  return <Dialog open={open} onOpenChange={(next) => next ? onOpenChange(true) : close()}>
+    <DialogContent className="border-white/10 bg-[#111] text-white sm:max-w-md">
+      <DialogHeader>
+        <DialogTitle>Adicionar etapa</DialogTitle>
+        <DialogDescription>Crie uma nova coluna no fluxo do projeto ativo. A etapa será salva imediatamente.</DialogDescription>
+      </DialogHeader>
+      <Field label="Nome da etapa">
+        <Input
+          autoFocus
+          aria-label="Nome da etapa"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault()
+              void save()
+            }
+          }}
+          placeholder="Ex.: Aprovação final"
+        />
+      </Field>
+      <DialogFooter>
+        <Button variant="outline" disabled={saving} onClick={close}>Cancelar</Button>
+        <Button disabled={!name.trim() || saving} onClick={() => void save()}>
+          {saving ? <LoaderCircle className="animate-spin"/> : <CirclePlus/>}
+          Adicionar etapa
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 }
 
 function ProjectListView({

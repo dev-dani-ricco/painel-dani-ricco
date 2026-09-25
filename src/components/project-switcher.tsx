@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenuLabel, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -35,6 +35,7 @@ export function ProjectSwitcher({ onNavigate, compact = false }: { onNavigate?: 
 
   const choose = (id: string) => {
     setActiveProject(id)
+    router.push("/projetos")
     onNavigate?.()
   }
 
@@ -84,10 +85,6 @@ export function ProjectSwitcher({ onNavigate, compact = false }: { onNavigate?: 
             </span>
           </DropdownMenuItem>
         ))}
-        <DropdownMenuSeparator/>
-        <DropdownMenuItem onSelect={() => { router.push("/projetos"); onNavigate?.() }}>
-          <Columns3/> Abrir quadro Kanban
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   </>

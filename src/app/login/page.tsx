@@ -1,12 +1,15 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { ArrowRight, Eye, EyeOff, LoaderCircle, LockKeyhole } from "lucide-react"
 import { FEATURES, type FeatureKey } from "@/lib/auth-config"
+import { useAuth } from "@/components/auth-provider"
 
 export default function LoginPage() {
   const router = useRouter()
+  const { refresh } = useAuth()
   const [username, setUsername] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [showPassword, setShowPassword] = React.useState(false)
@@ -26,15 +29,18 @@ export default function LoginPage() {
       const body = await response.json()
       if (!response.ok) throw new Error(body.error || "Não foi possível entrar.")
 
-      if (body.user?.mustChangePassword) {
-        router.push("/alterar-senha")
+      const authenticatedUser = await refresh()
+      if (!authenticatedUser) throw new Error("Sessão iniciada, mas não foi possível carregar suas permissões.")
+
+      if (authenticatedUser.mustChangePassword) {
+        router.replace("/alterar-senha")
         router.refresh()
         return
       }
 
-      const permissions = body.user?.permissions as FeatureKey[] | undefined
-      const first = FEATURES.find((feature) => permissions?.includes(feature.key))
-      router.push(first?.href || "/sem-acesso")
+      const permissions = authenticatedUser.permissions as FeatureKey[]
+      const first = FEATURES.find((feature) => permissions.includes(feature.key))
+      router.replace(first?.href || "/sem-acesso")
       router.refresh()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível entrar.")
@@ -48,8 +54,9 @@ export default function LoginPage() {
         <div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-[#ff6a00]/30 bg-[#ff6a00]/[.08]">
           <LockKeyhole className="size-5 text-[#ff6a00]"/>
         </div>
-        <p className="mt-5 text-[10px] font-bold uppercase tracking-[.24em] text-[#ff6a00]">DANI RICCO</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-[-.03em]">Painel de Lançamento</h1>
+        <Image src="/dani/logo-branca.png" alt="Dani Ricco" width={170} height={56} className="mx-auto mt-5 h-auto w-[145px] object-contain" priority unoptimized/>
+        <p className="impar-serif mt-3 text-[17px] tracking-[.08em] text-zinc-300">IMPAR®</p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-[-.03em]">Plataforma de Gestão</h1>
         <p className="mt-2 text-sm text-zinc-500">Acesso privado da equipe.</p>
       </div>
 

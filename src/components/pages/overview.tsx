@@ -1,21 +1,16 @@
 "use client"
 
-import * as React from "react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { ArrowRight, ArrowUpRight, AtSign, CalendarDays, Check, Circle, Clock3, Flag, Globe2, Link2, PanelsTopLeft, Sparkles } from "lucide-react"
-import { toast } from "sonner"
+import {
+  ArrowRight, ArrowUpRight, AtSign, BrainCircuit, CalendarDays,
+  FolderKanban, Globe2, Layers3, Link2, PanelsTopLeft,
+} from "lucide-react"
 import { useDashboard } from "@/components/data-provider"
-import { TaskSheet } from "@/components/entity-editors"
-import { MetricCard, SectionHeading, StatusBadge, TextLink } from "@/components/shared"
+import { SectionHeading, TextLink } from "@/components/shared"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Progress } from "@/components/ui/progress"
 import { DANI_ECOSYSTEM_RESOURCES } from "@/lib/dani-ecosystem"
-import type { Task } from "@/lib/types"
 
-const phases = ["Produto", "Oferta", "Produção", "Pré-Lançamento", "Lançamento", "Debriefing"]
-const milestones = [["19/09", "Último Workshop Imagem que Vende de 2026"], ["26/09", "Início da campanha de antecipação e Lista VIP"], ["26/10", "Intensificação da campanha"], ["06/11", "Lançamento oficial e abertura do carrinho"]]
 const ecosystemIcons = {
   site: Globe2,
   bio: PanelsTopLeft,
@@ -25,97 +20,82 @@ const ecosystemIcons = {
 
 export function OverviewPage() {
   const router = useRouter()
-  const { data, progress, update, projects, activeProjectId, setActiveProject } = useDashboard()
-  const [selected, setSelected] = React.useState<Task | null>(null)
-  const [taskOpen, setTaskOpen] = React.useState(false)
-  const focusTitles = ["Validar estrutura e módulos do curso", "Definir dois dias de gravação", "Aprovar linha editorial da campanha", "Enviar provas e depoimentos do Workshop Imagem que Vende"]
-  const focus = focusTitles.map((title) => data.tasks.find((task) => task.title === title)).filter(Boolean) as Task[]
-  const approvals = data.tasks.filter((task) => task.status === "Em aprovação")
-  const inProgress = data.tasks.filter((task) => !task.done && task.status !== "A iniciar").length
-  const toggle = (task: Task) => update("tasks", data.tasks.map((item) => item.id === task.id ? { ...item, done: !item.done, status: !item.done ? "Concluído" : "A iniciar" } : item))
-  const open = (task: Task) => { setSelected(task); setTaskOpen(true) }
-  const approve = (task: Task) => { update("tasks", data.tasks.map((item) => item.id === task.id ? { ...item, done: true, status: "Concluído" } : item)); toast.success("Material aprovado.") }
+  const { projects, activeProjectId, setActiveProject } = useDashboard()
+
   const openProject = (projectId: string) => {
     setActiveProject(projectId)
     router.push("/projetos")
   }
 
-  return <div className="space-y-8">
+  return <div className="space-y-10">
+    <section className="overflow-hidden rounded-2xl border border-white/[.08] bg-card">
+      <div className="grid gap-0 lg:grid-cols-[1fr_340px]">
+        <div className="p-6 sm:p-8 lg:p-10">
+          <div className="flex flex-wrap items-center gap-5">
+            <Image src="/dani/logo-branca.png" alt="Dani Ricco" width={190} height={64} className="h-auto w-[150px] object-contain sm:w-[175px]" priority unoptimized/>
+            <span className="h-8 w-px bg-white/10"/>
+            <div>
+              <p className="impar-serif text-2xl tracking-[.08em] text-zinc-100">IMPAR®</p>
+              <p className="mt-1 text-[8px] font-semibold uppercase tracking-[.2em] text-zinc-600">Método · Ecossistema</p>
+            </div>
+          </div>
+          <p className="eyebrow mt-9">CENTRAL DE GESTÃO</p>
+          <h1 className="mt-2 max-w-3xl text-3xl font-semibold tracking-[-.04em] sm:text-5xl">Um ponto único para o time enxergar o ecossistema e escolher onde trabalhar.</h1>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-500">A Visão Geral é transversal. Nenhum lançamento é aberto automaticamente aqui; o contexto específico começa quando um projeto é selecionado.</p>
+          <div className="mt-7 flex flex-wrap gap-2">
+            <Button onClick={() => router.push("/projetos")}><FolderKanban/>Projetos</Button>
+            <Button variant="outline" onClick={() => router.push("/calendario")}><CalendarDays/>Calendário</Button>
+            <Button variant="outline" onClick={() => router.push("/inteligencia")}><BrainCircuit/>Inteligência</Button>
+          </div>
+        </div>
+        <div className="relative hidden min-h-[320px] overflow-hidden border-l border-white/[.07] lg:block">
+          <Image src="/dani/fan-side.jpg" alt="Dani Ricco" fill className="object-cover object-[center_24%] opacity-80" sizes="340px" unoptimized/>
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"/>
+          <div className="absolute inset-x-5 bottom-5 border-t border-white/20 pt-4">
+            <p className="text-[9px] font-semibold uppercase tracking-[.2em] text-zinc-300">Comunicação de Impacto</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section>
       <SectionHeading eyebrow="ECOSSISTEMA DIGITAL" title="Central da Dani"/>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {DANI_ECOSYSTEM_RESOURCES
-          .slice()
-          .sort((a, b) => a.sortOrder - b.sortOrder)
-          .map((resource) => {
-            const Icon = ecosystemIcons[resource.category]
-            return <a
-              key={resource.key}
-              href={resource.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group rounded-xl border border-white/[.08] bg-card p-5 transition hover:-translate-y-0.5 hover:border-primary/30"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <span className="grid size-9 place-items-center rounded-lg border border-white/[.08] bg-black/20 text-primary"><Icon className="size-4"/></span>
-                <ArrowUpRight className="size-4 text-zinc-700 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary"/>
-              </div>
-              <p className="mt-5 text-[9px] font-semibold uppercase tracking-[.16em] text-zinc-700">{resource.eyebrow}</p>
+        {DANI_ECOSYSTEM_RESOURCES.slice().sort((a, b) => a.sortOrder - b.sortOrder).map((resource) => {
+          const Icon = ecosystemIcons[resource.category]
+          return <a key={resource.key} href={resource.url} target="_blank" rel="noopener noreferrer" className="group overflow-hidden rounded-xl border border-white/[.08] bg-card transition hover:-translate-y-0.5 hover:border-primary/30">
+            <div className="relative aspect-[16/7] overflow-hidden border-b border-white/[.06] bg-black/30">
+              <Image src={resource.previewImage} alt={resource.previewAlt} fill className="object-cover object-center opacity-70 transition duration-300 group-hover:scale-[1.025] group-hover:opacity-90" sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw" unoptimized/>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#111] via-transparent to-transparent"/>
+              <span className="absolute left-3 top-3 grid size-8 place-items-center rounded-lg border border-white/10 bg-black/55 text-primary backdrop-blur"><Icon className="size-4"/></span>
+              <ArrowUpRight className="absolute right-3 top-3 size-4 text-white/45 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary"/>
+            </div>
+            <div className="p-4">
+              <p className="text-[8px] font-semibold uppercase tracking-[.17em] text-zinc-700">{resource.eyebrow}</p>
               <h3 className="mt-1 text-sm font-semibold text-zinc-200">{resource.title}</h3>
-              <p className="mt-2 text-[11px] leading-5 text-zinc-600">{resource.description}</p>
-              <div className="mt-4 flex items-center gap-2 text-[9px] text-zinc-700">
-                <span className="size-1.5 rounded-full bg-primary"/>
-                {resource.source === "painel-dani-ricco" ? "Fonte interna conectada" : "Recurso externo mapeado"}
-              </div>
-            </a>
-          })}
+              <p className="mt-2 min-h-10 text-[10px] leading-5 text-zinc-600">{resource.description}</p>
+              <div className="mt-3 flex items-center gap-2 text-[8px] text-zinc-700"><span className="size-1.5 rounded-full bg-primary"/>{resource.source === "painel-dani-ricco" ? "Fonte interna conectada" : "Recurso externo mapeado"}</div>
+            </div>
+          </a>
+        })}
       </div>
-      <p className="mt-3 text-[10px] leading-5 text-zinc-700">Os links públicos desta estrutura usam o mesmo registro central do painel. Hoje a aplicação identifica site oficial, bio site, Diagnóstico IMPAR® e Instagram; novas LPs entram neste inventário sem duplicar a fonte.</p>
     </section>
 
     <section>
       <SectionHeading eyebrow="PROJETOS" title="Escolha onde o time vai trabalhar" action={<TextLink onClick={() => router.push("/projetos")}>Gerenciar projetos</TextLink>}/>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {projects.map((project) => <button
-          type="button"
-          key={project.id}
-          onClick={() => openProject(project.id)}
-          className={"rounded-xl border p-5 text-left transition hover:-translate-y-0.5 " + (project.id === activeProjectId ? "border-primary/35 bg-primary/[.04]" : "border-white/[.08] bg-card hover:border-white/15")}
-        >
+        {projects.map((project) => <button type="button" key={project.id} onClick={() => openProject(project.id)} className={"group rounded-xl border p-5 text-left transition hover:-translate-y-0.5 " + (project.id === activeProjectId ? "border-primary/25 bg-primary/[.025]" : "border-white/[.08] bg-card hover:border-white/15")}>
           <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-[9px] font-semibold uppercase tracking-[.16em] text-zinc-700">{project.projectType}</p>
-              <h3 className="mt-1 truncate text-sm font-semibold text-zinc-200">{project.name}</h3>
-            </div>
-            <ArrowRight className="size-4 shrink-0 text-zinc-700"/>
+            <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-white/[.07] bg-black/20 text-zinc-500 group-hover:text-primary"><Layers3 className="size-4"/></span>
+            <ArrowRight className="size-4 shrink-0 text-zinc-700 transition group-hover:translate-x-0.5 group-hover:text-primary"/>
           </div>
-          <p className="mt-3 line-clamp-2 text-[11px] leading-5 text-zinc-600">{project.objective || project.description || "Projeto sem descrição."}</p>
-          <div className="mt-4 flex flex-wrap gap-2 text-[9px] text-zinc-600">
-            <span>{project.status}</span>
-            <span>·</span>
-            <span>{project.cards.length} cards</span>
-            <span>·</span>
-            <span>{project.stages.length} etapas</span>
-          </div>
+          <p className="mt-5 text-[8px] font-semibold uppercase tracking-[.17em] text-zinc-700">{project.projectType}</p>
+          <h3 className="mt-1 text-sm font-semibold text-zinc-200">{project.name}</h3>
+          <p className="mt-2 line-clamp-2 min-h-10 text-[10px] leading-5 text-zinc-600">{project.objective || project.description || "Projeto sem descrição."}</p>
+          <div className="mt-4 flex flex-wrap gap-2 text-[9px] text-zinc-600"><span>{project.status}</span><span>·</span><span>{project.cards.length} cards</span><span>·</span><span>{project.stages.length} etapas</span></div>
         </button>)}
       </div>
+      {!projects.length ? <div className="rounded-xl border border-dashed border-white/[.08] p-8 text-center text-xs text-zinc-600">Nenhum projeto disponível.</div> : null}
     </section>
-
-    <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-card p-6 sm:p-8 lg:p-10">
-      <div className="absolute inset-y-0 right-0 hidden w-2/5 lg:block [background-image:radial-gradient(circle_at_70%_30%,rgba(255,106,0,.12),transparent_27%),linear-gradient(135deg,transparent_45%,rgba(255,255,255,.04)_45%,rgba(255,255,255,.04)_46%,transparent_46%)]"/>
-      <div className="relative max-w-3xl"><div className="flex flex-wrap items-center gap-3"><p className="eyebrow">PRODUTO DIGITAL · 2026</p><StatusBadge status={data.product.status}/></div><h1 className="mt-6 text-4xl font-semibold tracking-[-.045em] sm:text-5xl lg:text-6xl">{data.product.name}</h1><p className="mt-3 text-base font-medium text-primary sm:text-lg">{data.product.concept}</p><p className="mt-6 max-w-2xl text-sm leading-7 text-zinc-400">{data.product.description}</p><div className="mt-8 flex flex-wrap items-center gap-3"><Button className="h-10 px-4 text-xs text-black" onClick={() => router.push("/calendario")}><CalendarDays/>Ver calendário</Button><div className="ml-0 min-w-52 flex-1 sm:ml-3 sm:max-w-xs"><div className="mb-2 flex justify-between text-[10px]"><span className="text-zinc-500">Progresso geral</span><span className="font-semibold text-primary">{progress}%</span></div><Progress value={progress} className="h-1.5 bg-white/[.08]"/></div></div></div>
-      <div className="relative mt-10 flex flex-wrap items-center gap-3 border-t border-white/[.07] pt-5 text-xs"><Flag className="size-4 text-primary"/><span className="text-zinc-500">Próxima data-chave</span><span className="font-semibold">19 de setembro · Workshop Imagem que Vende</span></div>
-    </section>
-
-    <section><SectionHeading eyebrow="LEITURA RÁPIDA" title="Hoje no lançamento"/><div className="grid grid-cols-2 gap-3 lg:grid-cols-5"><MetricCard label="Etapa atual" value="Produção" hint="Fase 03 de 06"/><MetricCard label="Próxima entrega" value="28/08" hint="Estrutura do curso"/><MetricCard label="Em andamento" value={inProgress}/><MetricCard label="Aprovações" value={approvals.length}/><MetricCard label="Progresso geral" value={`${progress}%`}/></div></section>
-
-    <div className="grid gap-8 xl:grid-cols-[1.55fr_.85fr]">
-      <section><SectionHeading eyebrow="PRIORIDADES" title="Foco da Dani agora" action={<TextLink onClick={() => router.push("/producao")}>Ver produção</TextLink>}/><Card className="border-white/[.08] bg-card py-0"><CardContent className="divide-y divide-white/[.07] p-0">{focus.map((task) => <div className="group flex items-start gap-3 p-4 sm:items-center sm:p-5" key={task.id}><Checkbox checked={task.done} onCheckedChange={() => toggle(task)} className="mt-0.5 sm:mt-0"/><button className="min-w-0 flex-1 text-left" onClick={() => open(task)}><p className="text-sm font-semibold leading-5 group-hover:text-primary">{task.title}</p><div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-zinc-600"><Clock3 className="size-3"/><span>{task.due}</span><StatusBadge status={task.status}/></div></button><Button variant="ghost" size="icon-sm" onClick={() => open(task)} aria-label="Abrir tarefa"><ArrowRight/></Button></div>)}</CardContent></Card></section>
-      <section><SectionHeading eyebrow="APROVAÇÕES" title="Aguardando sua aprovação"/><div className="space-y-3">{approvals.slice(0,4).map((task) => <Card className="border-white/[.08] bg-card py-0" key={task.id}><CardContent className="p-4"><div className="flex items-start justify-between gap-4"><div><p className="text-sm font-semibold leading-5">{task.title}</p><p className="mt-2 text-[10px] text-zinc-600">{task.owner} · {task.due}</p></div><Sparkles className="size-4 shrink-0 text-primary"/></div><div className="mt-4 flex gap-2"><Button size="sm" onClick={() => approve(task)}><Check/>Aprovar</Button><Button size="sm" variant="outline" onClick={() => { open(task); toast.info("Registre o ajuste nas observações.") }}>Solicitar ajuste</Button></div></CardContent></Card>)}{approvals.length === 0 && <Card className="border-dashed bg-transparent py-0"><CardContent className="p-8 text-center text-xs text-zinc-500">Tudo aprovado por aqui.</CardContent></Card>}</div></section>
-    </div>
-
-    <section><SectionHeading eyebrow="JORNADA" title="Fases do lançamento"/><div className="overflow-x-auto rounded-xl border border-white/[.08] bg-card p-5"><div className="flex min-w-[760px] items-center">{phases.map((phase, index) => <React.Fragment key={phase}><div className="flex min-w-24 flex-col items-center text-center"><span className={`flex size-8 items-center justify-center rounded-full border text-[10px] font-semibold ${index < 3 ? "border-primary bg-primary text-black" : "border-white/10 text-zinc-600"}`}>{index < 3 ? <Check className="size-3.5"/> : `0${index + 1}`}</span><span className={`mt-3 text-[11px] font-semibold ${index === 2 ? "text-primary" : "text-zinc-500"}`}>{phase}</span></div>{index < phases.length - 1 && <div className={`h-px flex-1 ${index < 2 ? "bg-primary" : "bg-white/10"}`}/>}</React.Fragment>)}</div></div></section>
-    <section><SectionHeading eyebrow="AGENDA ESTRATÉGICA" title="Próximos marcos"/><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{milestones.map(([date, title], index) => <Card className="group border-white/[.08] bg-card py-0 transition hover:-translate-y-0.5 hover:border-primary/30" key={date}><CardContent className="p-5"><div className="flex items-center justify-between"><span className="text-xl font-semibold text-primary">{date}</span><Circle className="size-2 fill-current text-zinc-700"/></div><p className="mt-7 text-sm font-semibold leading-5">{title}</p><p className="mt-3 text-[10px] uppercase tracking-widest text-zinc-600">MARCO 0{index + 1}</p></CardContent></Card>)}</div></section>
-    <TaskSheet open={taskOpen} onOpenChange={setTaskOpen} task={selected}/>
   </div>
 }
