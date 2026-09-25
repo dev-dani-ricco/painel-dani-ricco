@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { FeatureKey, PanelRole } from "@/lib/auth-config"
+import { FEATURE_GROUPS, type FeatureKey, type PanelRole } from "@/lib/auth-config"
 
 type User = {
   id: string
@@ -144,7 +144,7 @@ export function AccessManagement() {
         </div>
         <div>
           <CardTitle className="text-base">Usuários e acessos</CardTitle>
-          <CardDescription>Libere módulos individualmente para cada login.</CardDescription>
+          <CardDescription>Organize o acesso por área e abra somente o que cada pessoa realmente precisa usar.</CardDescription>
         </div>
       </div>
     </CardHeader>
@@ -185,15 +185,37 @@ export function AccessManagement() {
               Redefinir senha
             </Button>
           </div>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature) => {
-              const allowed = user.permissions.includes(feature.key)
-              return <label key={feature.key} className={"flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs transition " + (allowed ? "border-primary/20 bg-primary/[.05] text-zinc-200" : "border-white/[.06] text-zinc-600")}>
-                <input type="checkbox" checked={allowed} onChange={() => toggleFeature(user, feature.key)}/>
-                <span>{feature.label}</span>
-              </label>
-            })}
-          </div>
+          <details className="group mt-4 overflow-hidden rounded-xl border border-white/[.07] bg-black/10">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-medium text-zinc-300 [&::-webkit-details-marker]:hidden">
+              <span>Acessos por área</span>
+              <span className="rounded-full border border-white/[.08] px-2 py-1 text-[10px] text-zinc-500">{user.permissions.length}/{features.length} liberados</span>
+            </summary>
+            <div className="space-y-4 border-t border-white/[.06] p-4">
+              {FEATURE_GROUPS.map((group) => {
+                const groupFeatures = group.features.map((key) => features.find((feature) => feature.key === key)).filter(Boolean) as Feature[]
+                if (groupFeatures.length === 0) return null
+                const allowedCount = groupFeatures.filter((feature) => user.permissions.includes(feature.key)).length
+                return <section key={group.key} className="rounded-lg border border-white/[.06] bg-black/15 p-3">
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold text-zinc-200">{group.label}</p>
+                      <p className="mt-1 text-[10px] leading-4 text-zinc-600">{group.description}</p>
+                    </div>
+                    <span className="shrink-0 text-[10px] text-zinc-600">{allowedCount}/{groupFeatures.length}</span>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                    {groupFeatures.map((feature) => {
+                      const allowed = user.permissions.includes(feature.key)
+                      return <label key={feature.key} className={"flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs transition " + (allowed ? "border-primary/20 bg-primary/[.05] text-zinc-200" : "border-white/[.06] text-zinc-600")}>
+                        <input type="checkbox" checked={allowed} onChange={() => toggleFeature(user, feature.key)}/>
+                        <span>{feature.label}</span>
+                      </label>
+                    })}
+                  </div>
+                </section>
+              })}
+            </div>
+          </details>
 
           <div className="mt-4 flex justify-end">
             <Button size="sm" disabled={saving === user.id} onClick={() => void save(user)}>

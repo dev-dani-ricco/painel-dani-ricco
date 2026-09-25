@@ -17,6 +17,32 @@ export const FEATURES = [
 export type FeatureKey = typeof FEATURES[number]["key"]
 export type PanelRole = "owner" | "admin" | "editor" | "reviewer" | "system"
 
+export const FEATURE_GROUPS: Array<{
+  key: "platform" | "project" | "administration"
+  label: string
+  description: string
+  features: FeatureKey[]
+}> = [
+  {
+    key: "platform",
+    label: "Plataforma",
+    description: "Visão geral e ferramentas transversais.",
+    features: ["overview", "inteligencia", "calendario"],
+  },
+  {
+    key: "project",
+    label: "Projeto · Presença de Alto Valor",
+    description: "Briefings, produção, entrega e lançamento deste projeto.",
+    features: ["produto", "oferta", "curso", "area_de_membros", "producao", "pre_lancamento", "lancamento", "debriefing", "materiais"],
+  },
+  {
+    key: "administration",
+    label: "Administração",
+    description: "Configurações e gestão de acessos.",
+    features: ["configuracoes"],
+  },
+]
+
 const ALL = FEATURES.map((item) => item.key)
 export const ROLE_DEFAULTS: Record<PanelRole, FeatureKey[]> = {
   owner: [...ALL],
