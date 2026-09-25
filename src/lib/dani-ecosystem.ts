@@ -1,14 +1,41 @@
+export type DaniEcosystemCategory = "site" | "bio" | "landing_page" | "social"
+
+export type DaniEcosystemStatus = "active" | "attention" | "paused" | "archived"
+export type DaniEcosystemHealth = "online" | "degraded" | "offline" | "unknown"
+
+export type DaniEcosystemConnection = {
+  provider: string
+  connected: boolean
+  note?: string
+}
+
 export type DaniEcosystemResource = {
   key: string
   eyebrow: string
   title: string
   description: string
   url: string
-  category: "site" | "bio" | "landing_page" | "social"
+  category: DaniEcosystemCategory
   source: "painel-dani-ricco" | "external"
   previewImage: string
   previewAlt: string
   sortOrder: number
+  product: string
+  projectId: string | null
+  responsible: string
+  status: DaniEcosystemStatus
+  analytics: DaniEcosystemConnection
+  integration: DaniEcosystemConnection
+  health: DaniEcosystemHealth
+  healthCheckedAt: string | null
+  notes: string
+  updatedAt: string
+}
+
+const DEFAULT_CONNECTION: DaniEcosystemConnection = {
+  provider: "",
+  connected: false,
+  note: "A VALIDAR",
 }
 
 export const DANI_ECOSYSTEM_RESOURCES: DaniEcosystemResource[] = [
@@ -23,6 +50,16 @@ export const DANI_ECOSYSTEM_RESOURCES: DaniEcosystemResource[] = [
     previewImage: "/dani/previews/site-oficial.jpg",
     previewAlt: "Prévia visual do site oficial de Dani Ricco",
     sortOrder: 10,
+    product: "Institucional Dani Ricco",
+    projectId: null,
+    responsible: "Não definido",
+    status: "active",
+    analytics: DEFAULT_CONNECTION,
+    integration: DEFAULT_CONNECTION,
+    health: "unknown",
+    healthCheckedAt: null,
+    notes: "",
+    updatedAt: "",
   },
   {
     key: "bio-site",
@@ -35,6 +72,16 @@ export const DANI_ECOSYSTEM_RESOURCES: DaniEcosystemResource[] = [
     previewImage: "/dani/previews/bio-site.jpg",
     previewAlt: "Prévia visual do bio site de Dani Ricco",
     sortOrder: 20,
+    product: "Ecossistema Dani Ricco",
+    projectId: null,
+    responsible: "Não definido",
+    status: "active",
+    analytics: DEFAULT_CONNECTION,
+    integration: DEFAULT_CONNECTION,
+    health: "unknown",
+    healthCheckedAt: null,
+    notes: "",
+    updatedAt: "",
   },
   {
     key: "diagnostico-impar",
@@ -47,6 +94,16 @@ export const DANI_ECOSYSTEM_RESOURCES: DaniEcosystemResource[] = [
     previewImage: "/dani/previews/diagnostico-impar.jpg",
     previewAlt: "Prévia visual da experiência Diagnóstico Arquetípico IMPAR®",
     sortOrder: 30,
+    product: "Método IMPAR®",
+    projectId: null,
+    responsible: "Não definido",
+    status: "active",
+    analytics: DEFAULT_CONNECTION,
+    integration: DEFAULT_CONNECTION,
+    health: "unknown",
+    healthCheckedAt: null,
+    notes: "",
+    updatedAt: "",
   },
   {
     key: "instagram",
@@ -59,6 +116,16 @@ export const DANI_ECOSYSTEM_RESOURCES: DaniEcosystemResource[] = [
     previewImage: "/dani/previews/instagram.jpg",
     previewAlt: "Prévia visual do Instagram de Dani Ricco",
     sortOrder: 40,
+    product: "Marca Dani Ricco",
+    projectId: null,
+    responsible: "Não definido",
+    status: "active",
+    analytics: DEFAULT_CONNECTION,
+    integration: DEFAULT_CONNECTION,
+    health: "unknown",
+    healthCheckedAt: null,
+    notes: "",
+    updatedAt: "",
   },
 ]
 
