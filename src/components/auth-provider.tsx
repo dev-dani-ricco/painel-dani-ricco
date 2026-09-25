@@ -10,6 +10,7 @@ export type AuthUser = {
   displayName: string
   role: PanelRole
   permissions: FeatureKey[]
+  mustChangePassword: boolean
   exp: number
 }
 

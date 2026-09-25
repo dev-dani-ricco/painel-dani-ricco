@@ -26,6 +26,7 @@ export async function PATCH(request: Request) {
       userId?: string
       role?: PanelRole
       active?: boolean
+      mustChangePassword?: boolean
       permissions?: FeatureKey[]
     }
     if (!body.userId) {
@@ -39,6 +40,7 @@ export async function PATCH(request: Request) {
       userId: body.userId,
       role: body.role,
       active: body.active,
+      mustChangePassword: body.mustChangePassword,
       permissions: body.permissions,
     })
     return NextResponse.json({ user })

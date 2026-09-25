@@ -31,6 +31,7 @@ export async function POST(request: Request) {
       displayName: user.display_name,
       role: user.role,
       permissions,
+      mustChangePassword: user.must_change_password,
     })
     const response = NextResponse.json({
       ok: true,
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
         displayName: user.display_name,
         role: user.role,
         permissions,
+        mustChangePassword: user.must_change_password,
       },
     })
     response.cookies.set(SESSION_COOKIE, token, {

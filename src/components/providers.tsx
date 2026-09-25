@@ -13,7 +13,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     (window.location.hostname === "daniricco.com.br" ||
       window.location.hostname === "www.daniricco.com.br" ||
       window.location.hostname === "bio.daniricco.com.br")
-  const publicRoute = pathname.startsWith("/site") || pathname.startsWith("/bio") || pathname.startsWith("/login") || pathname.startsWith("/sem-acesso") || publicHost
+  const publicRoute = pathname.startsWith("/site") || pathname.startsWith("/bio") || pathname.startsWith("/login") || pathname.startsWith("/alterar-senha") || pathname.startsWith("/sem-acesso") || publicHost
 
   const content = (
     <TooltipProvider delayDuration={200}>

@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
   Bell, BookOpen, Boxes, BrainCircuit, CalendarDays, ChartNoAxesColumnIncreasing, CheckSquare2, ChevronRight, Cloud, CloudOff, LoaderCircle,
-  ClipboardList, FileText, FolderOpen, LayoutDashboard, LogOut, Menu, PackageCheck, Plus,
+  ClipboardList, FileText, FolderOpen, KeyRound, LayoutDashboard, LogOut, Menu, PackageCheck, Plus,
   Search, Settings, Sparkles, UserRound,
 } from "lucide-react"
 import { useDashboard } from "@/components/data-provider"
@@ -74,6 +74,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <p className="truncate text-xs font-semibold">{user?.displayName || user?.username || "Usuário"}</p>
           <p className="text-[10px] text-zinc-600">{user ? roleLabel(user.role) : "Carregando..."}</p>
         </div>
+        <Button variant="ghost" size="icon-xs" asChild title="Alterar minha senha">
+          <Link href="/alterar-senha"><KeyRound/></Link>
+        </Button>
         <Button variant="ghost" size="icon-xs" onClick={() => void logout()} title="Sair"><LogOut/></Button>
       </div>
     </div>
@@ -115,7 +118,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     (window.location.hostname === "daniricco.com.br" ||
       window.location.hostname === "www.daniricco.com.br" ||
       window.location.hostname === "bio.daniricco.com.br")
-  const publicRoute = pathname.startsWith("/site") || pathname.startsWith("/bio") || pathname.startsWith("/login") || pathname.startsWith("/sem-acesso") || publicHost
+  const publicRoute = pathname.startsWith("/site") || pathname.startsWith("/bio") || pathname.startsWith("/login") || pathname.startsWith("/alterar-senha") || pathname.startsWith("/sem-acesso") || publicHost
 
   if (publicRoute) return <>{children}</>
   return <DashboardShell pathname={pathname}>{children}</DashboardShell>

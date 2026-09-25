@@ -9,6 +9,7 @@ export type PanelSession = {
   displayName: string
   role: PanelRole
   permissions: FeatureKey[]
+  mustChangePassword: boolean
   exp: number
 }
 
@@ -81,6 +82,7 @@ export async function verifySession(token?: string | null): Promise<PanelSession
     const payload = JSON.parse(base64UrlToText(encoded)) as PanelSession
     if (!payload.exp || payload.exp < Math.floor(Date.now() / 1000)) return null
     if (!payload.sub || !payload.username || !Array.isArray(payload.permissions)) return null
+    if (typeof payload.mustChangePassword !== "boolean") return null
     return payload
   } catch {
     return null

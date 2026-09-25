@@ -11,6 +11,8 @@ export type PanelUser = {
   password_salt: string
   password_hash: string
   active: boolean
+  must_change_password: boolean
+  password_changed_at: string | null
   created_at: string
   updated_at: string
 }
@@ -21,6 +23,7 @@ export type PanelUserView = {
   displayName: string
   role: PanelRole
   active: boolean
+  mustChangePassword: boolean
   permissions: FeatureKey[]
 }
 export function ensureAuthSchema() {
@@ -36,9 +39,19 @@ export function ensureAuthSchema() {
         password_salt TEXT NOT NULL,
         password_hash TEXT NOT NULL,
         active BOOLEAN NOT NULL DEFAULT TRUE,
+        must_change_password BOOLEAN NOT NULL DEFAULT FALSE,
+        password_changed_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
+    `
+    await sql`
+      ALTER TABLE panel_users
+      ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE
+    `
+    await sql`
+      ALTER TABLE panel_users
+      ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMPTZ
     `
     await sql`
       CREATE TABLE IF NOT EXISTS panel_user_permissions (
@@ -65,7 +78,7 @@ export async function getUserByUsername(username: string) {
   await ensureAuthSchema()
   const result = await getSql()`
     SELECT id, username, display_name, role, password_salt, password_hash,
-           active, created_at, updated_at
+           active, must_change_password, password_changed_at, created_at, updated_at
     FROM panel_users
     WHERE LOWER(username) = LOWER(${username})
     LIMIT 1
@@ -80,7 +93,7 @@ export async function getUserById(id: string) {
   await ensureAuthSchema()
   const result = await getSql()`
     SELECT id, username, display_name, role, password_salt, password_hash,
-           active, created_at, updated_at
+           active, must_change_password, password_changed_at, created_at, updated_at
     FROM panel_users
     WHERE id = ${id}
     LIMIT 1
@@ -110,12 +123,12 @@ export async function getEffectivePermissions(userId: string, role: PanelRole) {
 export async function listUsers(): Promise<PanelUserView[]> {
   await ensureAuthSchema()
   const rows = await getSql()`
-    SELECT id, username, display_name, role, active
+    SELECT id, username, display_name, role, active, must_change_password
     FROM panel_users
     ORDER BY CASE role
       WHEN 'owner' THEN 1 WHEN 'admin' THEN 2 WHEN 'system' THEN 3
       WHEN 'editor' THEN 4 ELSE 5 END, username
-  ` as Array<{ id: string; username: string; display_name: string; role: string; active: boolean }>
+  ` as Array<{ id: string; username: string; display_name: string; role: string; active: boolean; must_change_password: boolean }>
   return Promise.all(rows.map(async (row) => {
     const role = normalizeRole(row.role)
     return {
@@ -124,6 +137,7 @@ export async function listUsers(): Promise<PanelUserView[]> {
       displayName: row.display_name,
       role,
       active: row.active,
+      mustChangePassword: row.must_change_password,
       permissions: await getEffectivePermissions(row.id, role),
     }
   }))
@@ -132,6 +146,7 @@ export async function updateUserAccess(input: {
   userId: string
   role?: PanelRole
   active?: boolean
+  mustChangePassword?: boolean
   permissions?: FeatureKey[]
 }) {
   await ensureAuthSchema()
@@ -140,9 +155,13 @@ export async function updateUserAccess(input: {
   if (!user) throw new Error("USER_NOT_FOUND")
   const role = input.role ?? user.role
   const active = input.active ?? user.active
+  const mustChangePassword = input.mustChangePassword ?? user.must_change_password
   await sql`
     UPDATE panel_users
-    SET role = ${role}, active = ${active}, updated_at = NOW()
+    SET role = ${role},
+        active = ${active},
+        must_change_password = ${mustChangePassword},
+        updated_at = NOW()
     WHERE id = ${input.userId}
   `
 
@@ -175,6 +194,41 @@ export async function updateUserAccess(input: {
     displayName: refreshed.display_name,
     role: refreshed.role,
     active: refreshed.active,
+    mustChangePassword: refreshed.must_change_password,
     permissions: await getEffectivePermissions(refreshed.id, refreshed.role),
   }
+}
+
+export async function updateUserPassword(input: {
+  userId: string
+  passwordSalt: string
+  passwordHash: string
+  mustChangePassword: boolean
+}) {
+  await ensureAuthSchema()
+  const sql = getSql()
+  const user = await getUserById(input.userId)
+  if (!user) throw new Error("USER_NOT_FOUND")
+
+  await sql`
+    UPDATE panel_users
+    SET password_salt = ${input.passwordSalt},
+        password_hash = ${input.passwordHash},
+        must_change_password = ${input.mustChangePassword},
+        password_changed_at = NOW(),
+        updated_at = NOW()
+    WHERE id = ${input.userId}
+  `
+
+  return getUserById(input.userId)
+}
+
+export async function setMustChangePassword(userId: string, mustChangePassword: boolean) {
+  await ensureAuthSchema()
+  await getSql()`
+    UPDATE panel_users
+    SET must_change_password = ${mustChangePassword},
+        updated_at = NOW()
+    WHERE id = ${userId}
+  `
 }

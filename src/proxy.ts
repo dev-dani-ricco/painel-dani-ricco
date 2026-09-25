@@ -57,6 +57,22 @@ export async function proxy(request: NextRequest) {
     return noIndex(NextResponse.redirect(login))
   }
 
+  const passwordChangeAllowed =
+    pathname === "/alterar-senha" ||
+    pathname === "/api/auth/password" ||
+    pathname === "/api/auth/logout" ||
+    pathname === "/api/auth/me"
+
+  if (session.mustChangePassword && !passwordChangeAllowed) {
+    if (isApi) {
+      return noIndex(NextResponse.json({ error: "PASSWORD_CHANGE_REQUIRED" }, { status: 403 }))
+    }
+    const changePassword = request.nextUrl.clone()
+    changePassword.pathname = "/alterar-senha"
+    changePassword.search = ""
+    return noIndex(NextResponse.redirect(changePassword))
+  }
+
   const feature = routeFeature(pathname)
   if (feature && !session.permissions.includes(feature)) {
     if (isApi) {

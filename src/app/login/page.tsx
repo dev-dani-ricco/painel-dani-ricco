@@ -26,6 +26,12 @@ export default function LoginPage() {
       const body = await response.json()
       if (!response.ok) throw new Error(body.error || "Não foi possível entrar.")
 
+      if (body.user?.mustChangePassword) {
+        router.push("/alterar-senha")
+        router.refresh()
+        return
+      }
+
       const permissions = body.user?.permissions as FeatureKey[] | undefined
       const first = FEATURES.find((feature) => permissions?.includes(feature.key))
       router.push(first?.href || "/sem-acesso")
