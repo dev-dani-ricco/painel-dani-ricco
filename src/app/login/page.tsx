@@ -58,11 +58,11 @@ export default function LoginPage() {
           <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[.16em] text-zinc-500">Usuário</span>
           <input
             autoFocus
-            autoComplete="username"
+            autoComplete="off"
             value={username}
             onChange={(event) => setUsername(event.target.value.toUpperCase())}
             className="h-11 w-full rounded-lg border border-white/10 bg-black/30 px-3 text-sm outline-none transition focus:border-[#ff6a00]/60"
-            placeholder="DANI"
+            placeholder=""
           />
         </label>
 
