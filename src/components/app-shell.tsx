@@ -12,6 +12,7 @@ import { useDashboard } from "@/components/data-provider"
 import { useAuth } from "@/components/auth-provider"
 import { roleLabel } from "@/lib/auth-config"
 import { TaskSheet } from "@/components/entity-editors"
+import { ProjectSwitcher } from "@/components/project-switcher"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,8 +25,9 @@ import { cn } from "@/lib/utils"
 
 export const navigation = [
   { href: "/", feature: "overview", group: "platform", title: "Visão Geral", short: "Visão Geral", icon: LayoutDashboard },
-  { href: "/inteligencia", feature: "inteligencia", group: "platform", title: "Central de Inteligência", short: "Inteligência", icon: BrainCircuit },
   { href: "/calendario", feature: "calendario", group: "platform", title: "Calendário", short: "Calendário", icon: CalendarDays },
+  { href: "/inteligencia", feature: "inteligencia", group: "platform", title: "Central de Inteligência", short: "Inteligência", icon: BrainCircuit },
+  { href: "/projetos", feature: "projetos", group: "project", title: "Quadro do Projeto", short: "Kanban", icon: Boxes },
   { href: "/produto", feature: "produto", group: "project", title: "Briefing 01 — Produto", short: "Produto", icon: FileText },
   { href: "/oferta", feature: "oferta", group: "project", title: "Briefing 02 — Oferta", short: "Oferta", icon: Sparkles },
   { href: "/curso", feature: "curso", group: "project", title: "Entrega do Curso", short: "Entrega do Curso", icon: BookOpen },
@@ -39,12 +41,12 @@ export const navigation = [
 ] as const
 
 function Brand({ progress }: { progress: number }) {
-  return <div className="border-b border-sidebar-border px-5 py-6"><div className="flex items-start justify-between"><div><p className="text-[11px] font-bold tracking-[.2em]">DANI RICCO</p><p className="mt-1 text-[9px] font-semibold uppercase tracking-[.18em] text-zinc-600">Plataforma de gestão</p></div><div className="size-2 rounded-full bg-primary shadow-[0_0_14px_rgba(255,106,0,.6)]"/></div><div className="mt-5 flex items-center justify-between"><span className="text-[10px] text-zinc-500">Progresso geral</span><span className="text-[10px] font-semibold text-primary">{progress}%</span></div><Progress value={progress} className="mt-2 h-1 bg-white/[.06]" /></div>
+  return <div className="border-b border-sidebar-border px-5 py-6"><div className="flex items-start justify-between"><div><p className="text-[11px] font-bold tracking-[.2em]">DANI RICCO</p><p className="mt-1 text-[9px] font-semibold uppercase tracking-[.18em] text-zinc-600">Plataforma de gestão</p></div><div className="size-2 rounded-full bg-primary shadow-[0_0_14px_rgba(255,106,0,.6)]"/></div><div className="mt-5 flex items-center justify-between"><span className="text-[10px] text-zinc-500">Progresso do projeto</span><span className="text-[10px] font-semibold text-primary">{progress}%</span></div><Progress value={progress} className="mt-2 h-1 bg-white/[.06]" /></div>
 }
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
-  const { data, progress } = useDashboard()
+  const { progress } = useDashboard()
   const { user, has, logout } = useAuth()
   const visibleNavigation = navigation.filter((item) => has(item.feature))
   const platformItems = visibleNavigation.filter((item) => item.group === "platform")
@@ -71,11 +73,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <nav className="space-y-6 p-3 pb-7">
         {platformItems.length > 0 && <section><p className="px-3 pb-2 text-[9px] font-semibold uppercase tracking-[.18em] text-zinc-700">Plataforma</p><div className="space-y-1">{links(platformItems)}</div></section>}
         {projectItems.length > 0 && <section>
-          <div className="mb-2 rounded-xl border border-white/[.07] bg-white/[.025] px-3 py-3">
-            <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[.18em] text-zinc-600"><FolderOpen className="size-3.5 text-primary"/>Projeto</div>
-            <p className="mt-1.5 line-clamp-2 text-[11px] font-semibold leading-4 text-zinc-300">{data.product.name}</p>
-          </div>
-          <div className="space-y-1">{links(projectItems, true)}</div>
+          <ProjectSwitcher onNavigate={onNavigate}/>
+          <div className="mt-2 space-y-1">{links(projectItems, true)}</div>
         </section>}
         {adminItems.length > 0 && <section><p className="px-3 pb-2 text-[9px] font-semibold uppercase tracking-[.18em] text-zinc-700">Administração</p><div className="space-y-1">{links(adminItems)}</div></section>}
       </nav>

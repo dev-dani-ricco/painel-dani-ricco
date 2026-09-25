@@ -1,7 +1,8 @@
 export const FEATURES = [
   { key: "overview", label: "Visão Geral", href: "/" },
-  { key: "inteligencia", label: "Central de Inteligência", href: "/inteligencia" },
   { key: "calendario", label: "Calendário", href: "/calendario" },
+  { key: "inteligencia", label: "Central de Inteligência", href: "/inteligencia" },
+  { key: "projetos", label: "Quadro do Projeto", href: "/projetos" },
   { key: "produto", label: "Produto", href: "/produto" },
   { key: "oferta", label: "Oferta", href: "/oferta" },
   { key: "curso", label: "Entrega do Curso", href: "/curso" },
@@ -27,13 +28,13 @@ export const FEATURE_GROUPS: Array<{
     key: "platform",
     label: "Plataforma",
     description: "Visão geral e ferramentas transversais.",
-    features: ["overview", "inteligencia", "calendario"],
+    features: ["overview", "calendario", "inteligencia"],
   },
   {
     key: "project",
-    label: "Projeto · Presença de Alto Valor",
-    description: "Briefings, produção, entrega e lançamento deste projeto.",
-    features: ["produto", "oferta", "curso", "area_de_membros", "producao", "pre_lancamento", "lancamento", "debriefing", "materiais"],
+    label: "Projetos",
+    description: "Quadro, briefings, produção, entrega e lançamento do projeto ativo.",
+    features: ["projetos", "produto", "oferta", "curso", "area_de_membros", "producao", "pre_lancamento", "lancamento", "debriefing", "materiais"],
   },
   {
     key: "administration",
@@ -49,12 +50,12 @@ export const ROLE_DEFAULTS: Record<PanelRole, FeatureKey[]> = {
   admin: [...ALL],
   system: [...ALL],
   editor: [
-    "overview", "inteligencia", "calendario", "produto", "oferta",
+    "overview", "calendario", "inteligencia", "projetos", "produto", "oferta",
     "curso", "area_de_membros", "producao", "pre_lancamento",
     "lancamento", "debriefing", "materiais",
   ],
   reviewer: [
-    "overview", "inteligencia", "calendario", "produto", "oferta",
+    "overview", "calendario", "inteligencia", "projetos", "produto", "oferta",
     "pre_lancamento", "lancamento", "debriefing", "materiais",
   ],
 }
@@ -70,8 +71,9 @@ export function roleLabel(role: PanelRole) {
 }
 export function routeFeature(pathname: string): FeatureKey | null {
   if (pathname === "/") return "overview"
-  if (pathname.startsWith("/inteligencia") || pathname.startsWith("/api/knowledge/")) return "inteligencia"
   if (pathname.startsWith("/calendario")) return "calendario"
+  if (pathname.startsWith("/inteligencia") || pathname.startsWith("/api/knowledge/")) return "inteligencia"
+  if (pathname.startsWith("/projetos") || pathname.startsWith("/api/projects")) return "projetos"
   if (pathname.startsWith("/produto")) return "produto"
   if (pathname.startsWith("/oferta")) return "oferta"
   if (pathname.startsWith("/curso")) return "curso"

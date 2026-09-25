@@ -2,6 +2,41 @@ export type TaskStatus = "A iniciar" | "Em produção" | "Em aprovação" | "Con
 export type Priority = "Alta" | "Média" | "Baixa"
 export type LessonStatus = "Não iniciada" | "Roteirizada" | "Gravada" | "Em edição" | "Em revisão" | "Pronta"
 
+export type ProjectStage = {
+  id: string
+  name: string
+  order: number
+}
+
+export type ProjectCard = {
+  id: string
+  title: string
+  stageId: string
+  owner: string
+  dueDate: string
+  priority: Priority
+  description: string
+}
+
+export type Project = {
+  id: string
+  name: string
+  description: string
+  objective: string
+  successCriteria: string
+  priority: Priority
+  projectType: string
+  status: string
+  responsibles: string[]
+  startDate: string
+  targetDate: string
+  workspaceId: string
+  stages: ProjectStage[]
+  cards: ProjectCard[]
+  createdAt: string
+  updatedAt: string
+}
+
 export type Task = {
   id: string
   title: string

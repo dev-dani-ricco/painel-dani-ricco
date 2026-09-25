@@ -5,6 +5,7 @@ import { CoursePage, MembersPage } from "@/components/pages/course-members"
 import { DebriefPage, LaunchPage, OfferPage, PreLaunchPage, ProductPage } from "@/components/pages/briefings"
 import { MaterialsPage, SettingsPage } from "@/components/pages/materials-settings"
 import { ProductionPage } from "@/components/pages/production"
+import { ProjectsPage } from "@/components/pages/projects"
 
 export const metadata: Metadata = {
   robots: {
@@ -18,6 +19,7 @@ export const metadata: Metadata = {
 
 const pages = {
   calendario: CalendarPage,
+  projetos: ProjectsPage,
   produto: ProductPage,
   oferta: OfferPage,
   curso: CoursePage,
