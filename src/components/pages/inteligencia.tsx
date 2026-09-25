@@ -4,12 +4,12 @@ import Image from "next/image"
 import * as React from "react"
 import {
   AudioLines, BrainCircuit, CheckCircle2, FileText, Image as ImageIcon,
-  LoaderCircle, Mic, MicOff, RefreshCw, Send, Sparkles, Tags, Upload,
+  LoaderCircle, Mic, MicOff, Paperclip, RefreshCw, Send, Sparkles, Tags, Upload,
 } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
+import { PwaInstallButton } from "@/components/pwa-install-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -95,11 +95,12 @@ export function IntelligencePage() {
   const [saving, setSaving] = React.useState(false)
   const [uploading, setUploading] = React.useState(false)
   const [notice, setNotice] = React.useState("")
-  const [engine, setEngine] = React.useState("vercel-gateway")
+  const [engine, setEngine] = React.useState("fallback")
   const [recording, setRecording] = React.useState(false)
   const recorderRef = React.useRef<MediaRecorder | null>(null)
   const chunksRef = React.useRef<Blob[]>([])
   const fileInputRef = React.useRef<HTMLInputElement | null>(null)
+  const chatEndRef = React.useRef<HTMLDivElement | null>(null)
 
   const loadPulse = React.useCallback(async (offset = 0) => {
     const response = await fetch("/api/clone/pulse?offset=" + offset, { cache: "no-store" })
@@ -124,6 +125,10 @@ export function IntelligencePage() {
     }
   }, [loadPulse])
 
+  React.useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+  }, [messages, sending])
+
   async function sendMessage() {
     const content = message.trim()
     if (!content || sending) return
@@ -138,7 +143,7 @@ export function IntelligencePage() {
         body: JSON.stringify({ message: content }),
       })
       const body = await response.json()
-      if (!response.ok) throw new Error(body.error || "Falha ao conversar com o clone")
+      if (!response.ok) throw new Error(body.error || "Falha ao conversar com a Dani IA")
       setEngine(body.engine || "fallback")
       setMessages((current) => [...current, {
         id: crypto.randomUUID(),
@@ -147,7 +152,7 @@ export function IntelligencePage() {
         sources: body.sources,
       }])
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Falha ao conversar com o clone")
+      setNotice(error instanceof Error ? error.message : "Falha ao conversar com a Dani IA")
     } finally {
       setSending(false)
     }
@@ -167,7 +172,7 @@ export function IntelligencePage() {
       const body = await response.json()
       if (!response.ok) throw new Error(body.error || "Falha ao registrar memória")
       setMemory("")
-      setNotice("Memória registrada e classificada automaticamente.")
+      setNotice("Memória incorporada e classificada automaticamente.")
       await loadPulse(promptOffset)
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Falha ao registrar memória")
@@ -178,7 +183,7 @@ export function IntelligencePage() {
 
   async function uploadFile(file: File) {
     setUploading(true)
-    setNotice("")
+    setNotice(file.type.startsWith("audio/") ? "Recebendo e transcrevendo o áudio…" : "Processando " + file.name + "…")
     try {
       const form = new FormData()
       form.set("file", file)
@@ -186,12 +191,14 @@ export function IntelligencePage() {
       const body = await response.json()
       if (!response.ok) throw new Error(body.error || "Falha no envio")
       await loadPulse(promptOffset)
-      const warning = body.processing?.warning
-      setNotice(
-        warning
-          ? "Arquivo guardado. O processamento inteligente ficou pendente nesta execução."
-          : file.name + " foi incorporado ao clone e classificado.",
-      )
+
+      if (file.type.startsWith("audio/") && body.processing?.status === "ready") {
+        setNotice("Áudio transcrito e incorporado ao clone com sucesso.")
+      } else if (body.processing?.warning) {
+        setNotice("Conteúdo recebido. Parte do processamento inteligente ficou pendente.")
+      } else {
+        setNotice(file.name + " foi incorporado ao clone.")
+      }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Falha no envio")
     } finally {
@@ -220,7 +227,7 @@ export function IntelligencePage() {
       const body = await response.json()
       if (!response.ok) throw new Error(body.error || "Falha ao ensinar o clone")
       setPromptAnswer("")
-      setNotice("Resposta incorporada. O clone atualizou a cobertura deste tema.")
+      setNotice("Resposta incorporada. O clone atualizou este aspecto da Dani.")
       setPromptOffset(0)
       await loadPulse(0)
     } catch (error) {
@@ -242,153 +249,165 @@ export function IntelligencePage() {
       recorderRef.current?.stop()
       return
     }
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setNotice("Gravação de áudio não está disponível neste navegador.")
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setNotice("Este navegador não oferece gravação de áudio compatível.")
       return
     }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       chunksRef.current = []
-      const recorder = new MediaRecorder(stream)
+      const preferred = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/mp4",
+      ].find((type) => MediaRecorder.isTypeSupported(type))
+      const recorder = new MediaRecorder(stream, preferred ? { mimeType: preferred } : undefined)
       recorderRef.current = recorder
+
       recorder.ondataavailable = (event) => {
         if (event.data.size) chunksRef.current.push(event.data)
       }
-      recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" })
+      recorder.onerror = () => {
         stream.getTracks().forEach((track) => track.stop())
         setRecording(false)
-        if (blob.size) {
-          const file = new File([blob], "memoria-audio-" + Date.now() + ".webm", { type: blob.type })
-          void uploadFile(file)
-        }
+        setNotice("A gravação foi interrompida pelo navegador. Tente novamente.")
       }
-      recorder.start()
+      recorder.onstop = () => {
+        const mimeType = recorder.mimeType || preferred || "audio/webm"
+        const blob = new Blob(chunksRef.current, { type: mimeType })
+        stream.getTracks().forEach((track) => track.stop())
+        setRecording(false)
+        if (!blob.size) {
+          setNotice("Nenhum áudio foi capturado.")
+          return
+        }
+        const extension = mimeType.includes("mp4") ? "m4a" : "webm"
+        const file = new File([blob], "memoria-dani-" + Date.now() + "." + extension, { type: mimeType })
+        void uploadFile(file)
+      }
+
+      recorder.start(1000)
       setRecording(true)
-      setNotice("Gravando. Fale naturalmente; o áudio será transformado em memória do clone.")
+      setNotice("Gravando… fale naturalmente e toque no microfone novamente para concluir.")
     } catch {
-      setNotice("Não foi possível acessar o microfone.")
+      setNotice("Não foi possível acessar o microfone. Verifique a permissão do navegador.")
     }
   }
 
   if (loading) {
-    return <div className="flex min-h-[55vh] items-center justify-center"><LoaderCircle className="size-6 animate-spin text-primary"/></div>
+    return <div className="flex min-h-[55vh] items-center justify-center"><DaniAvatar state="thinking" size="lg"/></div>
   }
 
   const stats = pulse?.stats
   const recent = pulse?.recent || []
 
   return (
-    <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-3xl border border-white/[.08] bg-[#0d0d0d]">
-        <div className="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_70%_25%,rgba(255,106,0,.14),transparent_55%)]"/>
-        <div className="relative grid gap-8 p-6 lg:grid-cols-[1fr_auto] lg:items-end lg:p-8">
-          <div>
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 min-w-32 items-center rounded-xl border border-white/[.08] bg-black/30 px-4">
-                <Image src="/dani/logo-branca.png" alt="Dani Ricco" width={122} height={34} className="h-auto w-[122px] object-contain"/>
-              </div>
-              <Badge className="border border-primary/20 bg-primary/[.08] text-primary hover:bg-primary/[.08]">
-                <Sparkles className="size-3"/> CLONE ATIVO
-              </Badge>
+    <div className="overflow-hidden rounded-2xl border border-white/[.07] bg-[#0b0b0b]">
+      <header className="flex min-h-16 items-center justify-between gap-4 border-b border-white/[.06] px-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <DaniAvatar state={recording ? "recording" : sending ? "thinking" : "idle"} size="sm"/>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="truncate text-sm font-semibold text-zinc-100">Dani IA</p>
+              <span className="size-1.5 rounded-full bg-primary shadow-[0_0_12px_rgba(255,106,0,.8)]"/>
             </div>
-            <p className="mt-6 text-[10px] font-semibold uppercase tracking-[.22em] text-zinc-600">MEMÓRIA VIVA DO ECOSSISTEMA</p>
-            <h1 className="mt-2 max-w-3xl text-3xl font-semibold tracking-[-.04em] sm:text-4xl">
-              Ensine o que a Dani pensa. O clone aprende como ela decide.
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-500">
-              Texto, arquivos, imagens, áudios, decisões e exemplos reais entram em uma única memória central, classificados automaticamente para alimentar a Dani IA em todo o ecossistema.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
-            <Metric value={String(stats?.totalMemories || 0)} label="memórias"/>
-            <Metric value={(stats?.coveragePercent || 0) + "%"} label="cobertura"/>
-            <Metric value={String(stats?.coveredDomains || 0) + "/" + String(stats?.totalDomains || 0)} label="temas"/>
-            <Metric value={engine === "fallback" ? "MEM" : "IA"} label="motor"/>
+            <p className="truncate text-[10px] text-zinc-600">Clone inteligente · memória viva do ecossistema</p>
           </div>
         </div>
-      </section>
+        <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 rounded-full border border-white/[.07] bg-white/[.02] px-3 py-1.5 text-[9px] text-zinc-600 md:flex">
+            <span>{stats?.totalMemories || 0} memórias</span>
+            <span>·</span>
+            <span>{stats?.coveragePercent || 0}% cobertura</span>
+            <span>·</span>
+            <span>{engine === "fallback" ? "memória" : "IA ativa"}</span>
+          </div>
+          <PwaInstallButton/>
+        </div>
+      </header>
 
       {notice && (
-        <div className="rounded-xl border border-primary/20 bg-primary/[.045] px-4 py-3 text-xs text-zinc-300">
+        <div className="border-b border-primary/10 bg-primary/[.035] px-4 py-2.5 text-center text-[11px] text-zinc-400">
           {notice}
         </div>
       )}
 
-      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.45fr)_minmax(390px,.55fr)]">
-        <Card className="min-h-[620px] border-white/[.08] bg-card/70">
-          <CardHeader className="border-b border-white/[.06]">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <BrainCircuit className="size-4 text-primary"/> Conversar com a Dani IA
-                </CardTitle>
-                <CardDescription>Consulte critérios, repertório, decisões, linguagem e memória acumulada.</CardDescription>
-              </div>
-              <Badge variant="outline" className="border-white/10 text-[9px] text-zinc-500">
-                memória compartilhada
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="flex min-h-[530px] flex-col p-0">
-            <div className="flex-1 space-y-4 p-5">
-              {!messages.length && (
-                <div className="flex min-h-[330px] flex-col items-center justify-center text-center">
-                  <div className="relative">
-                    <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl"/>
-                    <div className="relative grid size-14 place-items-center rounded-2xl border border-primary/20 bg-primary/[.06]">
-                      <BrainCircuit className="size-6 text-primary"/>
-                    </div>
-                  </div>
-                  <p className="mt-5 text-base font-medium">Pergunte como se a Dani estivesse na sala.</p>
-                  <p className="mt-2 max-w-lg text-xs leading-5 text-zinc-600">
-                    O clone separa o que já aprendeu, o que é inferência e o que ainda precisa ser validado pela Dani real.
+      <div className="grid min-h-[calc(100vh-180px)] xl:grid-cols-[minmax(0,1fr)_360px]">
+        <main className="relative flex min-h-[680px] flex-col bg-[#0a0a0a]">
+          <div className="flex-1 overflow-y-auto">
+            <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
+              {!messages.length ? (
+                <div className="flex min-h-[430px] flex-col items-center justify-center text-center">
+                  <DaniAvatar state={recording ? "recording" : sending ? "thinking" : "idle"} size="xl"/>
+                  <p className="mt-7 text-[10px] font-semibold uppercase tracking-[.22em] text-primary">DANI IA</p>
+                  <h1 className="mt-2 text-2xl font-semibold tracking-[-.04em] text-zinc-100 sm:text-3xl">
+                    O que você quer pensar com a Dani?
+                  </h1>
+                  <p className="mt-3 max-w-xl text-xs leading-5 text-zinc-600">
+                    Pergunte, valide uma ideia, envie contexto ou peça uma análise. Quando o clone não tiver evidência suficiente, ele deve dizer o que ainda precisa aprender.
                   </p>
-                  <div className="mt-5 flex flex-wrap justify-center gap-2">
+                  <div className="mt-6 flex flex-wrap justify-center gap-2">
                     {[
-                      "Isso combina com a Dani?",
-                      "Ela aprovaria este posicionamento?",
-                      "Quais critérios pesam nessa decisão?",
+                      "A Dani aprovaria esta ideia?",
+                      "Como ela avaliaria esta decisão?",
+                      "Isso está coerente com o IMPAR?",
                     ].map((suggestion) => (
                       <button
                         key={suggestion}
                         onClick={() => setMessage(suggestion)}
-                        className="rounded-full border border-white/[.08] bg-white/[.025] px-3 py-1.5 text-[10px] text-zinc-500 transition hover:border-primary/20 hover:text-zinc-300"
+                        className="rounded-full border border-white/[.08] bg-white/[.025] px-3 py-2 text-[10px] text-zinc-500 transition hover:border-primary/25 hover:text-zinc-300"
                       >
                         {suggestion}
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
-              {messages.map((item) => (
-                <div key={item.id} className={item.role === "user" ? "ml-auto max-w-[82%]" : "mr-auto max-w-[90%]"}>
-                  <div className={
-                    item.role === "user"
-                      ? "rounded-2xl rounded-br-md bg-primary px-4 py-3 text-sm text-black"
-                      : "rounded-2xl rounded-bl-md border border-white/[.08] bg-white/[.035] px-4 py-3 text-sm leading-6 text-zinc-200"
-                  }>
-                    <div className="whitespace-pre-wrap">{item.content}</div>
-                  </div>
-                  {!!item.sources?.length && (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {item.sources.slice(0, 5).map((source) => (
-                        <Badge key={source.marker} variant="outline" className="border-white/10 text-[9px] text-zinc-500">
-                          {source.marker} · {source.title}
-                        </Badge>
-                      ))}
+              ) : (
+                <div className="space-y-7">
+                  {messages.map((item) => (
+                    <div key={item.id}>
+                      {item.role === "user" ? (
+                        <div className="ml-auto max-w-[82%] rounded-3xl rounded-br-lg bg-[#242424] px-4 py-3 text-sm leading-6 text-zinc-100">
+                          <div className="whitespace-pre-wrap">{item.content}</div>
+                        </div>
+                      ) : (
+                        <div className="flex items-start gap-3">
+                          <DaniAvatar state="idle" size="xs"/>
+                          <div className="min-w-0 flex-1 pt-1 text-sm leading-7 text-zinc-200">
+                            <div className="whitespace-pre-wrap">{item.content}</div>
+                            {!!item.sources?.length && (
+                              <div className="mt-3 flex flex-wrap gap-1.5">
+                                {item.sources.slice(0, 6).map((source) => (
+                                  <Badge key={source.marker} variant="outline" className="border-white/10 text-[9px] text-zinc-600">
+                                    {source.marker} · {source.title}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {sending && (
+                    <div className="flex items-center gap-3">
+                      <DaniAvatar state="thinking" size="xs"/>
+                      <div className="flex items-center gap-1.5 pt-1">
+                        <span className="size-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-.2s]"/>
+                        <span className="size-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-.1s]"/>
+                        <span className="size-1.5 animate-bounce rounded-full bg-zinc-500"/>
+                      </div>
                     </div>
                   )}
-                </div>
-              ))}
-              {sending && (
-                <div className="flex items-center gap-2 text-xs text-zinc-500">
-                  <LoaderCircle className="size-4 animate-spin"/> Dani IA está pensando…
+                  <div ref={chatEndRef}/>
                 </div>
               )}
             </div>
+          </div>
 
-            <div className="border-t border-white/[.06] p-4">
+          <div className="sticky bottom-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a] to-transparent px-3 pb-4 pt-8 sm:px-6">
+            <div className="mx-auto w-full max-w-3xl rounded-[26px] border border-white/[.10] bg-[#171717] p-3 shadow-[0_18px_80px_rgba(0,0,0,.45)]">
               <Textarea
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
@@ -398,32 +417,10 @@ export function IntelligencePage() {
                     void sendMessage()
                   }
                 }}
-                placeholder="Pergunte, valide uma ideia ou peça uma análise…"
-                className="min-h-24 resize-none border-white/10 bg-white/[.025]"
+                placeholder={recording ? "Gravando áudio para ensinar o clone…" : "Mensagem para a Dani IA"}
+                className="min-h-14 max-h-40 resize-none border-0 bg-transparent px-2 py-2 text-sm shadow-none focus-visible:ring-0"
               />
-              <div className="mt-3 flex justify-end">
-                <Button size="sm" disabled={!message.trim() || sending} onClick={() => void sendMessage()}>
-                  {sending ? <LoaderCircle className="animate-spin"/> : <Send/>} Enviar
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-6">
-          <Card className="border-white/[.08] bg-card/70">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm"><Sparkles className="size-4 text-primary"/> Ensinar o clone</CardTitle>
-              <CardDescription>Jogue contexto bruto. A classificação acontece por trás.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                value={memory}
-                onChange={(event) => setMemory(event.target.value)}
-                placeholder="Uma decisão, opinião, preferência, frase, regra, feedback, caso real, exceção…"
-                className="min-h-32 resize-none border-white/10 bg-white/[.025]"
-              />
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-1 flex items-center gap-1.5">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -435,46 +432,98 @@ export function IntelligencePage() {
                     event.currentTarget.value = ""
                   }}
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Adicionar arquivo à memória do clone"
+                  className="rounded-full text-zinc-500 hover:text-zinc-200"
+                >
+                  {uploading ? <LoaderCircle className="animate-spin"/> : <Paperclip/>}
+                </Button>
+                <Button
+                  type="button"
+                  variant={recording ? "default" : "ghost"}
+                  size="icon-sm"
+                  disabled={uploading}
+                  onClick={() => void toggleRecording()}
+                  title={recording ? "Encerrar gravação" : "Ensinar por áudio"}
+                  className={recording ? "rounded-full shadow-[0_0_20px_rgba(255,106,0,.35)]" : "rounded-full text-zinc-500 hover:text-zinc-200"}
+                >
+                  {recording ? <MicOff/> : <Mic/>}
+                </Button>
+                {recording && (
+                  <div className="ml-1 flex items-center gap-2 text-[10px] text-primary">
+                    <span className="size-2 animate-pulse rounded-full bg-primary"/>
+                    gravando
+                  </div>
+                )}
+                <Button
+                  size="icon-sm"
+                  className="ml-auto rounded-full"
+                  disabled={!message.trim() || sending}
+                  onClick={() => void sendMessage()}
+                  title="Enviar mensagem"
+                >
+                  {sending ? <LoaderCircle className="animate-spin"/> : <Send/>}
+                </Button>
+              </div>
+            </div>
+            <p className="mx-auto mt-2 max-w-3xl text-center text-[9px] text-zinc-700">
+              A Dani IA pode errar. Decisões sensíveis continuam exigindo validação humana.
+            </p>
+          </div>
+        </main>
+
+        <aside className="border-t border-white/[.06] bg-[#0e0e0e] xl:border-l xl:border-t-0">
+          <div className="max-h-[calc(100vh-180px)] space-y-0 overflow-y-auto">
+            <section className="border-b border-white/[.06] p-5">
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-4 text-primary"/>
+                <h2 className="text-sm font-semibold">Ensinar o clone</h2>
+              </div>
+              <p className="mt-1 text-[10px] leading-5 text-zinc-600">Registre contexto bruto. A classificação acontece por trás.</p>
+              <Textarea
+                value={memory}
+                onChange={(event) => setMemory(event.target.value)}
+                placeholder="Uma decisão, preferência, frase, regra, feedback, exceção ou caso real…"
+                className="mt-4 min-h-28 resize-none border-white/10 bg-black/20 text-xs"
+              />
+              <div className="mt-3 flex gap-2">
                 <Button variant="outline" size="sm" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
                   <Upload/> Arquivo
-                </Button>
-                <Button variant="outline" size="sm" disabled={uploading} onClick={() => void toggleRecording()}>
-                  {recording ? <MicOff className="text-primary"/> : <Mic/>}
-                  {recording ? "Encerrar" : "Áudio"}
                 </Button>
                 <Button className="ml-auto" size="sm" disabled={!memory.trim() || saving} onClick={() => void saveMemory()}>
                   {saving ? <LoaderCircle className="animate-spin"/> : <CheckCircle2/>} Incorporar
                 </Button>
               </div>
-              <div className="mt-4 flex items-start gap-2 rounded-lg border border-white/[.06] bg-black/20 p-3 text-[10px] leading-5 text-zinc-600">
+              <div className="mt-3 flex items-start gap-2 rounded-lg border border-white/[.05] bg-black/20 p-3 text-[9px] leading-4 text-zinc-600">
                 <Tags className="mt-0.5 size-3.5 shrink-0"/>
-                O clone identifica assunto, palavras-chave, termos, tipo de memória, profundidade e confiança. Você não precisa escolher “onde guardar”.
+                Assunto, palavras-chave, tipo, profundidade, confiança e autoria são inferidos automaticamente.
               </div>
-            </CardContent>
-          </Card>
+            </section>
 
-          <Card className="overflow-hidden border-primary/15 bg-[linear-gradient(145deg,rgba(255,106,0,.06),rgba(255,255,255,.015))]">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-4">
+            <section className="border-b border-white/[.06] p-5">
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[.18em] text-primary">O CLONE QUER ENTENDER MELHOR</p>
-                  <CardTitle className="mt-2 text-base">{pulse?.prompt.domainLabel || "Contexto"}</CardTitle>
+                  <p className="text-[9px] font-bold uppercase tracking-[.18em] text-primary">O clone quer entender melhor</p>
+                  <h2 className="mt-2 text-sm font-semibold">{pulse?.prompt.domainLabel || "Contexto"}</h2>
                 </div>
-                <Badge variant="outline" className="border-primary/20 text-[9px] text-primary">1 pergunta</Badge>
+                <Badge variant="outline" className="border-primary/20 text-[8px] text-primary">1 pergunta</Badge>
               </div>
-              <CardDescription>{pulse?.prompt.reason}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm font-medium leading-6 text-zinc-200">{pulse?.prompt.question}</p>
+              <p className="mt-2 text-[10px] leading-5 text-zinc-600">{pulse?.prompt.reason}</p>
+              <p className="mt-4 text-sm font-medium leading-6 text-zinc-200">{pulse?.prompt.question}</p>
               <Textarea
                 value={promptAnswer}
                 onChange={(event) => setPromptAnswer(event.target.value)}
                 placeholder={"Responda do seu jeito, " + (user?.displayName?.split(" ")[0] || "time") + "…"}
-                className="mt-4 min-h-28 resize-none border-white/10 bg-black/20"
+                className="mt-4 min-h-24 resize-none border-white/10 bg-black/20 text-xs"
               />
               <div className="mt-3 flex items-center gap-2">
                 <Select value={confidence} onValueChange={setConfidence}>
-                  <SelectTrigger className="h-9 w-[150px] border-white/10 bg-black/20 text-xs">
+                  <SelectTrigger className="h-8 w-[132px] border-white/10 bg-black/20 text-[10px]">
                     <SelectValue/>
                   </SelectTrigger>
                   <SelectContent>
@@ -484,85 +533,99 @@ export function IntelligencePage() {
                     <SelectItem value="3">Em formação · 3</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="ghost" size="sm" className="text-zinc-500" onClick={anotherPrompt}>
-                  <RefreshCw/> Outra
+                <Button variant="ghost" size="sm" className="px-2 text-zinc-600" onClick={anotherPrompt} title="Outra pergunta">
+                  <RefreshCw/>
                 </Button>
                 <Button className="ml-auto" size="sm" disabled={!promptAnswer.trim() || saving} onClick={() => void answerAdaptivePrompt()}>
                   {saving ? <LoaderCircle className="animate-spin"/> : <Sparkles/>} Ensinar
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            </section>
 
-      <Card className="border-white/[.08] bg-card/70">
-        <CardHeader className="border-b border-white/[.06]">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <CardTitle className="text-sm">Memórias recentes</CardTitle>
-              <CardDescription>O que entrou no clone e como foi classificado.</CardDescription>
-            </div>
-            <Badge variant="outline" className="border-white/10 text-[9px] text-zinc-500">
-              classificação automática
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
-          {!recent.length && (
-            <div className="col-span-full py-10 text-center text-xs text-zinc-600">
-              O clone ainda está vazio. Comece ensinando uma decisão, um áudio ou um exemplo real.
-            </div>
-          )}
-          {recent.map((source) => {
-            const Icon = sourceIcon(source.kind)
-            const metadata = source.metadata || {}
-            const keywords = Array.isArray(metadata.keywords) ? metadata.keywords.slice(0, 4).map(String) : []
-            return (
-              <div key={source.id} className="rounded-xl border border-white/[.06] bg-white/[.02] p-4">
-                <div className="flex items-start gap-3">
-                  <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-white/[.04]">
-                    <Icon className="size-4 text-zinc-500"/>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium text-zinc-300">{source.title}</p>
-                    <p className="mt-1 text-[9px] uppercase tracking-wide text-zinc-600">
-                      {String(metadata.contributor || source.kind)} · {new Date(source.created_at).toLocaleDateString("pt-BR")}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {metadata.topicLabel ? <Chip>{String(metadata.topicLabel)}</Chip> : null}
-                  {metadata.contentType ? <Chip>{label(metadata.contentType)}</Chip> : null}
-                  {metadata.detailLevel ? <Chip>{label(metadata.detailLevel)}</Chip> : null}
-                  {metadata.confidence ? <Chip>{"conf. " + String(metadata.confidence)}</Chip> : null}
-                </div>
-                {!!keywords.length && (
-                  <div className="mt-3 flex flex-wrap gap-x-2 gap-y-1 text-[9px] text-zinc-600">
-                    {keywords.map((keyword) => <span key={keyword}>#{keyword}</span>)}
-                  </div>
-                )}
+            <section className="p-5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-semibold text-zinc-300">Memórias recentes</h2>
+                <span className="text-[9px] text-zinc-700">{recent.length} visíveis</span>
               </div>
-            )
-          })}
-        </CardContent>
-      </Card>
+              <div className="mt-3 space-y-2">
+                {!recent.length && <p className="py-6 text-center text-[10px] text-zinc-700">O clone ainda está vazio.</p>}
+                {recent.slice(0, 6).map((source) => {
+                  const Icon = sourceIcon(source.kind)
+                  const metadata = source.metadata || {}
+                  return (
+                    <div key={source.id} className="rounded-xl border border-white/[.05] bg-white/[.018] p-3">
+                      <div className="flex items-start gap-2.5">
+                        <div className="grid size-7 shrink-0 place-items-center rounded-lg bg-white/[.04]">
+                          <Icon className="size-3.5 text-zinc-600"/>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[10px] font-medium text-zinc-400">{source.title}</p>
+                          <p className="mt-1 text-[8px] uppercase tracking-wide text-zinc-700">
+                            {String(metadata.contributor || source.kind)} · {new Date(source.created_at).toLocaleDateString("pt-BR")}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {metadata.topicLabel ? <Chip>{String(metadata.topicLabel)}</Chip> : null}
+                        {metadata.contentType ? <Chip>{label(metadata.contentType)}</Chip> : null}
+                        {metadata.detailLevel ? <Chip>{label(metadata.detailLevel)}</Chip> : null}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          </div>
+        </aside>
+      </div>
     </div>
   )
 }
 
-function Metric({ value, label: metricLabel }: { value: string; label: string }) {
+function DaniAvatar({
+  state,
+  size,
+}: {
+  state: "idle" | "thinking" | "recording"
+  size: "xs" | "sm" | "lg" | "xl"
+}) {
+  const sizes = {
+    xs: "size-8",
+    sm: "size-10",
+    lg: "size-16",
+    xl: "size-20",
+  }
+  const imageSizes = { xs: 32, sm: 40, lg: 64, xl: 80 }
+  const active = state !== "idle"
+
   return (
-    <div className="min-w-28 rounded-xl border border-white/[.07] bg-black/25 px-4 py-3">
-      <p className="text-xl font-semibold tracking-tight text-zinc-100">{value}</p>
-      <p className="mt-0.5 text-[9px] uppercase tracking-[.14em] text-zinc-600">{metricLabel}</p>
+    <div className={"relative shrink-0 " + sizes[size]}>
+      {active && (
+        <>
+          <span className="absolute -inset-2 animate-ping rounded-full border border-primary/25"/>
+          <span className="absolute -inset-1 animate-pulse rounded-full bg-primary/15 blur-md"/>
+        </>
+      )}
+      <span className="absolute -inset-[2px] rounded-full bg-gradient-to-br from-primary/80 via-primary/15 to-white/10"/>
+      <Image
+        src="/dani/profile-burgundy.png"
+        alt="Avatar Dani Ricco"
+        width={imageSizes[size]}
+        height={imageSizes[size]}
+        className="relative size-full rounded-full border-2 border-[#0b0b0b] object-cover"
+        priority={size === "xl"}
+      />
+      <span className={
+        "absolute bottom-0 right-0 rounded-full border-2 border-[#0b0b0b] " +
+        (state === "recording" ? "size-3 bg-primary animate-pulse" : "size-2.5 bg-primary")
+      }/>
     </div>
   )
 }
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-md border border-white/[.07] bg-black/20 px-2 py-1 text-[9px] text-zinc-500">
+    <span className="rounded-md border border-white/[.06] bg-black/20 px-1.5 py-0.5 text-[8px] text-zinc-600">
       {children}
     </span>
   )

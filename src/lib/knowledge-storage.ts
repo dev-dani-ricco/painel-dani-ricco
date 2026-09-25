@@ -3,8 +3,8 @@ import { join } from "node:path"
 import { put } from "@vercel/blob"
 
 export type StoredKnowledgeFile = {
-  provider: "vercel-blob" | "local"
-  path: string
+  provider: "vercel-blob" | "local" | "ephemeral"
+  path: string | null
 }
 
 function safeName(value: string) {
@@ -17,15 +17,26 @@ export async function storeKnowledgeFile(args: {
   file: File
 }): Promise<StoredKnowledgeFile> {
   const pathname = `dani-knowledge/${safeName(args.projectId)}/${args.sourceId}-${safeName(args.file.name)}`
-  try {
-    const blob = await put(pathname, args.file, {
-      access: "private",
-      addRandomSuffix: false,
-    })
-    return { provider: "vercel-blob", path: blob.pathname }
-  } catch (error) {
-    if (process.env.NODE_ENV === "production") throw error
+  const blobConfigured = Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID)
 
+  if (blobConfigured) {
+    try {
+      const blob = await put(pathname, args.file, {
+        access: "private",
+        addRandomSuffix: false,
+      })
+      return { provider: "vercel-blob", path: blob.pathname }
+    } catch (error) {
+      console.error("knowledge original archive failed", error)
+      if (process.env.NODE_ENV === "production") {
+        return { provider: "ephemeral", path: null }
+      }
+    }
+  } else if (process.env.NODE_ENV === "production") {
+    return { provider: "ephemeral", path: null }
+  }
+
+  {
     const root = join(process.cwd(), ".data", "dani-knowledge", safeName(args.projectId))
     await mkdir(root, { recursive: true })
     const target = join(root, `${args.sourceId}-${safeName(args.file.name)}`)

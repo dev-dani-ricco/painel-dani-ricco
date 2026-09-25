@@ -127,6 +127,8 @@ export async function POST(request: Request) {
         status: processed.status,
         processor: processed.processor,
         warning: processed.warning ?? null,
+        archivedOriginal: stored.provider !== "ephemeral",
+        storageProvider: stored.provider,
       },
     }, { status: 201 })
   } catch (error) {

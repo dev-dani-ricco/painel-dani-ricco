@@ -10,8 +10,22 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Painel de Lançamento | Dani Ricco",
-  description: "Painel operacional para produtos digitais e lançamentos da Dani Ricco.",
+  title: "Dani IA | Dani Ricco",
+  description: "Clone inteligente e memória viva do ecossistema Dani Ricco.",
+  applicationName: "Dani IA",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/dani/app-icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/dani/app-icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/dani/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Dani IA",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
