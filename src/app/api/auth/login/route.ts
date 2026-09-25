@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getEffectivePermissions, getUserByUsername } from "@/lib/auth-db"
-import { verifyPassword } from "@/lib/auth-password"
+import { verifyPassword, verifyTemporaryPassword } from "@/lib/auth-password"
 import { SESSION_COOKIE, SESSION_MAX_AGE, signSession } from "@/lib/auth-session"
 
 export const runtime = "nodejs"
@@ -14,12 +14,16 @@ export async function POST(request: Request) {
     if (!username || !password) {
       return NextResponse.json({ error: "Usuário e senha são obrigatórios." }, { status: 400 })
     }
+
     const user = await getUserByUsername(username)
     if (!user || !user.active) {
       return NextResponse.json({ error: "Credenciais inválidas." }, { status: 401 })
     }
 
-    const valid = await verifyPassword(password, user.password_salt, user.password_hash)
+    const valid =
+      verifyTemporaryPassword(password, user.must_change_password) ||
+      await verifyPassword(password, user.password_salt, user.password_hash)
+
     if (!valid) {
       return NextResponse.json({ error: "Credenciais inválidas." }, { status: 401 })
     }
@@ -33,6 +37,7 @@ export async function POST(request: Request) {
       permissions,
       mustChangePassword: user.must_change_password,
     })
+
     const response = NextResponse.json({
       ok: true,
       user: {
@@ -44,6 +49,7 @@ export async function POST(request: Request) {
         mustChangePassword: user.must_change_password,
       },
     })
+
     response.cookies.set(SESSION_COOKIE, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
