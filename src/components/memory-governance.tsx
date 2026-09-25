@@ -134,12 +134,15 @@ export function MemoryDeleteDialog({
               Motivo da exclusão
             </span>
             <Textarea
+              id="memory-delete-reason"
               value={reason}
               onChange={(event) => setReason(event.target.value)}
               placeholder="Explique explicitamente por que esta memória deve ser apagada…"
               className="min-h-24 resize-none border-white/10 bg-black/25 text-sm"
+              aria-describedby="memory-delete-reason-help"
+              required
             />
-            <span className="block text-[9px] text-zinc-700">
+            <span id="memory-delete-reason-help" className="block text-[9px] text-zinc-600">
               O motivo ficará permanentemente registrado na auditoria.
             </span>
           </label>
@@ -152,12 +155,18 @@ export function MemoryDeleteDialog({
               Digite <strong className="text-zinc-300">{CONFIRMATION}</strong> para confirmar.
             </p>
             <Input
+              id="memory-delete-confirmation"
               value={confirmation}
               onChange={(event) => setConfirmation(event.target.value)}
               autoComplete="off"
               placeholder={CONFIRMATION}
               className="border-white/10 bg-black/25"
+              aria-describedby="memory-delete-confirmation-help"
+              required
             />
+            <span id="memory-delete-confirmation-help" className="sr-only">
+              A exclusão só será habilitada após digitar a confirmação solicitada.
+            </span>
           </label>
         </div>
 

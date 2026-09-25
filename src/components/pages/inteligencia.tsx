@@ -106,6 +106,12 @@ function label(value: unknown) {
   return map[String(value)] || String(value)
 }
 
+function formatDuration(seconds: number) {
+  const minutes = Math.floor(seconds / 60).toString().padStart(2, "0")
+  const remainder = (seconds % 60).toString().padStart(2, "0")
+  return minutes + ":" + remainder
+}
+
 export function IntelligencePage() {
   const { user } = useAuth()
   const [pulse, setPulse] = React.useState<Pulse | null>(null)
@@ -122,6 +128,9 @@ export function IntelligencePage() {
   const [notice, setNotice] = React.useState("")
   const [engine, setEngine] = React.useState("fallback")
   const [recording, setRecording] = React.useState(false)
+  const [audioStage, setAudioStage] = React.useState<"idle" | "recording" | "processing" | "success" | "error">("idle")
+  const [recordingSeconds, setRecordingSeconds] = React.useState(0)
+  const [sidePanelOpen, setSidePanelOpen] = React.useState(false)
   const [deleteTarget, setDeleteTarget] = React.useState<DeletableMemory | null>(null)
   const [auditRefresh, setAuditRefresh] = React.useState(0)
   const recorderRef = React.useRef<MediaRecorder | null>(null)
@@ -157,6 +166,23 @@ export function IntelligencePage() {
   React.useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
   }, [messages, sending])
+
+  React.useEffect(() => {
+    if (!recording) return
+    const startedAt = Date.now()
+    const timer = window.setInterval(() => {
+      setRecordingSeconds(Math.floor((Date.now() - startedAt) / 1_000))
+    }, 1_000)
+    return () => window.clearInterval(timer)
+  }, [recording])
+
+  React.useEffect(() => {
+    return () => {
+      speechRecognitionRef.current?.abort()
+      const recorder = recorderRef.current
+      if (recorder?.state === "recording") recorder.stop()
+    }
+  }, [])
 
   async function sendMessage() {
     const content = message.trim()
@@ -222,17 +248,22 @@ export function IntelligencePage() {
       await loadPulse(promptOffset)
 
       if (file.type.startsWith("audio/") && body.processing?.status === "ready") {
+        setAudioStage("success")
         setNotice("Áudio transcrito e incorporado ao clone com sucesso.")
       } else if (body.processing?.warning === "AI_GATEWAY_BILLING_REQUIRED") {
+        setAudioStage("error")
         setNotice(
           "Áudio recebido, mas a transcrição de arquivo está pendente porque o AI Gateway da Vercel ainda exige liberação de cobrança. Gravações ao vivo usam a transcrição do navegador quando disponível.",
         )
       } else if (body.processing?.warning) {
+        if (file.type.startsWith("audio/")) setAudioStage("error")
         setNotice("Conteúdo recebido. Parte do processamento inteligente ficou pendente.")
       } else {
+        if (file.type.startsWith("audio/")) setAudioStage("success")
         setNotice(file.name + " foi incorporado ao clone.")
       }
     } catch (error) {
+      if (file.type.startsWith("audio/")) setAudioStage("error")
       setNotice(error instanceof Error ? error.message : "Falha no envio")
     } finally {
       setUploading(false)
@@ -259,9 +290,11 @@ export function IntelligencePage() {
       const body = await response.json()
       if (!response.ok) throw new Error(body.error || "Falha ao salvar transcrição.")
       await loadPulse(promptOffset)
+      setAudioStage("success")
       setNotice("Áudio transcrito no navegador e incorporado ao clone com sucesso.")
       return true
     } catch (error) {
+      setAudioStage("error")
       setNotice(error instanceof Error ? error.message : "Falha ao salvar transcrição.")
       return false
     } finally {
@@ -309,16 +342,20 @@ export function IntelligencePage() {
 
   async function toggleRecording() {
     if (recording) {
+      setAudioStage("processing")
+      setNotice("Finalizando gravação e preparando a memória…")
       speechRecognitionRef.current?.stop()
       recorderRef.current?.stop()
       return
     }
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setAudioStage("error")
       setNotice("Este navegador não oferece gravação de áudio compatível.")
       return
     }
 
     try {
+      setAudioStage("idle")
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       chunksRef.current = []
       speechTranscriptRef.current = ""
@@ -385,6 +422,7 @@ export function IntelligencePage() {
         speechRecognitionRef.current = null
         stream.getTracks().forEach((track) => track.stop())
         setRecording(false)
+        setAudioStage("error")
         setNotice("A gravação foi interrompida pelo navegador. Tente novamente.")
       }
       recorder.onstop = () => {
@@ -396,6 +434,7 @@ export function IntelligencePage() {
         const browserTranscript = speechTranscriptRef.current.trim()
         stream.getTracks().forEach((track) => track.stop())
         setRecording(false)
+        setAudioStage("processing")
 
         if (browserTranscript) {
           void saveBrowserAudioTranscript(browserTranscript)
@@ -403,6 +442,7 @@ export function IntelligencePage() {
         }
 
         if (!blob.size) {
+          setAudioStage("error")
           setNotice("Nenhum áudio foi capturado.")
           return
         }
@@ -420,13 +460,16 @@ export function IntelligencePage() {
       }
 
       recorder.start(1000)
+      setRecordingSeconds(0)
       setRecording(true)
+      setAudioStage("recording")
       setNotice(
         SpeechRecognitionApi
           ? "Gravando e transcrevendo ao vivo… toque no microfone novamente para concluir."
           : "Gravando… este navegador não oferece transcrição ao vivo; o servidor tentará processar ao concluir.",
       )
     } catch {
+      setAudioStage("error")
       setNotice("Não foi possível acessar o microfone. Verifique a permissão do navegador.")
     }
   }
@@ -467,7 +510,7 @@ export function IntelligencePage() {
       </header>
 
       {notice && (
-        <div className="border-b border-primary/10 bg-primary/[.035] px-4 py-2.5 text-center text-[11px] text-zinc-400">
+        <div role="status" aria-live="polite" className="border-b border-primary/10 bg-primary/[.035] px-4 py-2.5 text-center text-[11px] text-zinc-300">
           {notice}
         </div>
       )}
@@ -494,8 +537,9 @@ export function IntelligencePage() {
                     ].map((suggestion) => (
                       <button
                         key={suggestion}
+                        type="button"
                         onClick={() => setMessage(suggestion)}
-                        className="rounded-full border border-white/[.08] bg-white/[.025] px-3 py-2 text-[10px] text-zinc-500 transition hover:border-primary/25 hover:text-zinc-300"
+                        className="rounded-full border border-white/[.08] bg-white/[.025] px-3 py-2 text-[10px] text-zinc-400 transition hover:border-primary/25 hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       >
                         {suggestion}
                       </button>
@@ -530,13 +574,14 @@ export function IntelligencePage() {
                     </div>
                   ))}
                   {sending && (
-                    <div className="flex items-center gap-3">
+                    <div role="status" aria-live="polite" className="flex items-center gap-3">
                       <DaniAvatar state="thinking" size="xs"/>
                       <div className="flex items-center gap-1.5 pt-1">
                         <span className="size-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-.2s]"/>
                         <span className="size-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-.1s]"/>
                         <span className="size-1.5 animate-bounce rounded-full bg-zinc-500"/>
                       </div>
+                      <span className="text-xs text-zinc-500">Dani está pensando…</span>
                     </div>
                   )}
                   <div ref={chatEndRef}/>
@@ -547,7 +592,9 @@ export function IntelligencePage() {
 
           <div className="sticky bottom-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a] to-transparent px-3 pb-4 pt-8 sm:px-6">
             <div className="mx-auto w-full max-w-3xl rounded-[26px] border border-white/[.10] bg-[#171717] p-3 shadow-[0_18px_80px_rgba(0,0,0,.45)]">
+              <label htmlFor="dani-chat-message" className="sr-only">Mensagem para a Dani IA</label>
               <Textarea
+                id="dani-chat-message"
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 onKeyDown={(event) => {
@@ -564,6 +611,7 @@ export function IntelligencePage() {
                   ref={fileInputRef}
                   type="file"
                   className="hidden"
+                  aria-label="Adicionar arquivo à memória do clone"
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.json,image/*,audio/*"
                   onChange={(event) => {
                     const file = event.target.files?.[0]
@@ -578,6 +626,7 @@ export function IntelligencePage() {
                   disabled={uploading}
                   onClick={() => fileInputRef.current?.click()}
                   title="Adicionar arquivo à memória do clone"
+                  aria-label="Adicionar arquivo à memória do clone"
                   className="rounded-full text-zinc-500 hover:text-zinc-200"
                 >
                   {uploading ? <LoaderCircle className="animate-spin"/> : <Paperclip/>}
@@ -589,14 +638,21 @@ export function IntelligencePage() {
                   disabled={uploading}
                   onClick={() => void toggleRecording()}
                   title={recording ? "Encerrar gravação" : "Ensinar por áudio"}
+                  aria-label={recording ? "Encerrar gravação" : "Ensinar por áudio"}
                   className={recording ? "rounded-full shadow-[0_0_20px_rgba(255,106,0,.35)]" : "rounded-full text-zinc-500 hover:text-zinc-200"}
                 >
                   {recording ? <MicOff/> : <Mic/>}
                 </Button>
                 {recording && (
-                  <div className="ml-1 flex items-center gap-2 text-[10px] text-primary">
+                  <div role="status" aria-live="polite" className="ml-1 flex items-center gap-2 text-[11px] font-medium text-primary">
                     <span className="size-2 animate-pulse rounded-full bg-primary"/>
-                    gravando
+                    Gravando {formatDuration(recordingSeconds)} · toque no microfone para concluir
+                  </div>
+                )}
+                {!recording && audioStage !== "idle" && (
+                  <div role="status" aria-live="polite" className={"ml-1 flex items-center gap-2 text-[10px] " + (audioStage === "error" ? "text-red-400" : audioStage === "success" ? "text-emerald-400" : "text-primary")}>
+                    {audioStage === "processing" ? <LoaderCircle className="size-3 animate-spin"/> : audioStage === "success" ? <CheckCircle2 className="size-3"/> : <MicOff className="size-3"/>}
+                    {audioStage === "processing" ? "processando áudio" : audioStage === "success" ? "áudio salvo" : "falha no áudio"}
                   </div>
                 )}
                 <Button
@@ -605,19 +661,33 @@ export function IntelligencePage() {
                   disabled={!message.trim() || sending}
                   onClick={() => void sendMessage()}
                   title="Enviar mensagem"
+                  aria-label="Enviar mensagem"
                 >
                   {sending ? <LoaderCircle className="animate-spin"/> : <Send/>}
                 </Button>
               </div>
             </div>
-            <p className="mx-auto mt-2 max-w-3xl text-center text-[9px] text-zinc-700">
+            <p className="mx-auto mt-2 max-w-3xl text-center text-[9px] text-zinc-600">
               A Dani IA pode errar. Decisões sensíveis continuam exigindo validação humana.
             </p>
           </div>
         </main>
 
         <aside className="border-t border-white/[.06] bg-[#0e0e0e] xl:border-l xl:border-t-0">
-          <div className="max-h-[calc(100vh-180px)] space-y-0 overflow-y-auto">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left xl:hidden"
+            onClick={() => setSidePanelOpen((open) => !open)}
+            aria-expanded={sidePanelOpen}
+            aria-controls="clone-learning-panel"
+          >
+            <span>
+              <span className="block text-sm font-semibold text-zinc-200">Ensinar o clone e memórias</span>
+              <span className="mt-1 block text-[10px] text-zinc-500">Adicione contexto ou responda à próxima pergunta da Dani.</span>
+            </span>
+            <span className="shrink-0 text-[10px] font-medium text-primary">{sidePanelOpen ? "Fechar" : "Abrir"}</span>
+          </button>
+          <div id="clone-learning-panel" className={(sidePanelOpen ? "block " : "hidden ") + "max-h-[calc(100vh-180px)] space-y-0 overflow-y-auto xl:block"}>
             <section className="border-b border-white/[.06] p-5">
               <div className="flex items-center gap-2">
                 <Sparkles className="size-4 text-primary"/>
@@ -625,13 +695,14 @@ export function IntelligencePage() {
               </div>
               <p className="mt-1 text-[10px] leading-5 text-zinc-600">Registre contexto bruto. A classificação acontece por trás.</p>
               <Textarea
+                aria-label="Ensinar o clone com uma nova memória"
                 value={memory}
                 onChange={(event) => setMemory(event.target.value)}
                 placeholder="Uma decisão, preferência, frase, regra, feedback, exceção ou caso real…"
                 className="mt-4 min-h-28 resize-none border-white/10 bg-black/20 text-xs"
               />
               <div className="mt-3 flex gap-2">
-                <Button variant="outline" size="sm" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
+                <Button variant="outline" size="sm" disabled={uploading} onClick={() => fileInputRef.current?.click()} aria-label="Adicionar arquivo para ensinar o clone">
                   <Upload/> Arquivo
                 </Button>
                 <Button className="ml-auto" size="sm" disabled={!memory.trim() || saving} onClick={() => void saveMemory()}>
@@ -655,6 +726,7 @@ export function IntelligencePage() {
               <p className="mt-2 text-[10px] leading-5 text-zinc-600">{pulse?.prompt.reason}</p>
               <p className="mt-4 text-sm font-medium leading-6 text-zinc-200">{pulse?.prompt.question}</p>
               <Textarea
+                aria-label="Resposta para a pergunta adaptativa"
                 value={promptAnswer}
                 onChange={(event) => setPromptAnswer(event.target.value)}
                 placeholder={"Responda do seu jeito, " + (user?.displayName?.split(" ")[0] || "time") + "…"}
@@ -672,7 +744,7 @@ export function IntelligencePage() {
                     <SelectItem value="3">Em formação · 3</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="ghost" size="sm" className="px-2 text-zinc-600" onClick={anotherPrompt} title="Outra pergunta">
+                <Button variant="ghost" size="sm" className="px-2 text-zinc-500" onClick={anotherPrompt} title="Outra pergunta" aria-label="Mostrar outra pergunta adaptativa">
                   <RefreshCw/>
                 </Button>
                 <Button className="ml-auto" size="sm" disabled={!promptAnswer.trim() || saving} onClick={() => void answerAdaptivePrompt()}>
@@ -713,8 +785,9 @@ export function IntelligencePage() {
                               created_at: source.created_at,
                               metadata: source.metadata || {},
                             })}
-                            className="grid size-7 shrink-0 place-items-center rounded-lg text-zinc-700 transition hover:bg-red-500/[.06] hover:text-red-400"
+                            className="grid size-8 shrink-0 place-items-center rounded-lg text-zinc-500 transition hover:bg-red-500/[.06] hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                             title="Apagar memória"
+                            aria-label={"Apagar memória: " + source.title}
                           >
                             <Trash2 className="size-3.5"/>
                           </button>
