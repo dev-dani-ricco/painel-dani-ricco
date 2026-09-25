@@ -2,6 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { PublicFrame } from "@/components/public-site-frame"
+import { ecosystemResource } from "@/lib/dani-ecosystem"
 
 export const metadata = {
   title: "Dani Ricco | Comunicação de Impacto",
@@ -35,10 +36,10 @@ export default function DaniRiccoSitePage() {
                 Sua imagem é a primeira evidência do seu valor. Sua linguagem e seu comportamento decidem se essa percepção se sustenta.
               </p>
               <div className="mt-10 flex flex-wrap gap-3">
-                <Link href="https://diagnostico.daniricco.com.br" className="inline-flex h-14 items-center gap-3 bg-[#f0e7df] px-7 text-[10px] font-bold uppercase tracking-[.17em] text-[#30161f] transition hover:bg-white">
+                <Link href={ecosystemResource("diagnostico-impar")?.url || "https://diagnostico.daniricco.com.br"} className="inline-flex h-14 items-center gap-3 bg-[#f0e7df] px-7 text-[10px] font-bold uppercase tracking-[.17em] text-[#30161f] transition hover:bg-white">
                   Fazer diagnóstico arquetípico <ArrowRight className="size-4" />
                 </Link>
-                <a href="https://www.instagram.com/daniricco/" target="_blank" rel="noopener noreferrer" className="inline-flex h-14 items-center border border-white/20 px-7 text-[10px] font-bold uppercase tracking-[.17em] text-white transition hover:border-white/45">
+                <a href={ecosystemResource("instagram")?.url || "https://www.instagram.com/daniricco/"} target="_blank" rel="noopener noreferrer" className="inline-flex h-14 items-center border border-white/20 px-7 text-[10px] font-bold uppercase tracking-[.17em] text-white transition hover:border-white/45">
                   Conhecer Dani Ricco
                 </a>
               </div>
@@ -152,7 +153,7 @@ export default function DaniRiccoSitePage() {
             <p className="text-[10px] font-bold uppercase tracking-[.28em] text-[#742039]">Comece por você</p>
             <h2 className="impar-serif mt-6 text-4xl leading-[1.03] text-[#2d1a1e] sm:text-6xl">Descubra a força arquetípica que conduz sua presença.</h2>
             <p className="mx-auto mt-6 max-w-2xl text-sm leading-7 text-[#75645f]">Um diagnóstico aplicado aos pilares visual, verbal e comportamental para transformar percepção em intenção.</p>
-            <Link href="https://diagnostico.daniricco.com.br" className="mt-9 inline-flex h-14 items-center gap-3 bg-[#5a1729] px-8 text-[10px] font-bold uppercase tracking-[.17em] text-white transition hover:bg-[#43101f]">
+            <Link href={ecosystemResource("diagnostico-impar")?.url || "https://diagnostico.daniricco.com.br"} className="mt-9 inline-flex h-14 items-center gap-3 bg-[#5a1729] px-8 text-[10px] font-bold uppercase tracking-[.17em] text-white transition hover:bg-[#43101f]">
               Iniciar diagnóstico <ArrowRight className="size-4" />
             </Link>
           </div>

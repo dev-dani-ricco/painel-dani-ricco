@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowUpRight, AtSign, Globe2, Sparkles } from "lucide-react"
+import { ecosystemResource } from "@/lib/dani-ecosystem"
 
 export const metadata: Metadata = {
   title: "Dani Ricco | Links",
@@ -10,21 +11,21 @@ export const metadata: Metadata = {
 
 const links = [
   {
-    href: "https://daniricco.com.br",
+    href: ecosystemResource("site-oficial")?.url || "https://daniricco.com.br",
     eyebrow: "Site oficial",
     title: "Conheça Dani Ricco",
     description: "Trajetória, Método IMPAR® e Comunicação de Impacto.",
     icon: Globe2,
   },
   {
-    href: "https://diagnostico.daniricco.com.br",
+    href: ecosystemResource("diagnostico-impar")?.url || "https://diagnostico.daniricco.com.br",
     eyebrow: "Experiência gratuita",
     title: "Diagnóstico Arquetípico IMPAR®",
     description: "Descubra a força predominante que conduz sua presença e comunicação.",
     icon: Sparkles,
   },
   {
-    href: "https://www.instagram.com/daniricco/",
+    href: ecosystemResource("instagram")?.url || "https://www.instagram.com/daniricco/",
     eyebrow: "Instagram",
     title: "@daniricco",
     description: "Conteúdo, bastidores, experiências e conversas sobre presença e valor percebido.",

@@ -4,7 +4,6 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { Check, ChevronDown, Columns3, FolderOpen, Plus, X } from "lucide-react"
 import { toast } from "sonner"
-import { useAuth } from "@/components/auth-provider"
 import { useDashboard } from "@/components/data-provider"
 import { Button } from "@/components/ui/button"
 import {
@@ -32,11 +31,7 @@ const stageTemplates: Record<string, string[]> = {
 
 export function ProjectSwitcher({ onNavigate, compact = false }: { onNavigate?: () => void; compact?: boolean }) {
   const router = useRouter()
-  const { user } = useAuth()
-  const { projects, activeProject, activeProjectId, setActiveProject, createProject } = useDashboard()
-  const [open, setOpen] = React.useState(false)
-  const [saving, setSaving] = React.useState(false)
-  const canCreate = ["owner", "admin", "editor", "system"].includes(user?.role || "")
+  const { projects, activeProject, activeProjectId, setActiveProject } = useDashboard()
 
   const choose = (id: string) => {
     setActiveProject(id)
@@ -93,29 +88,13 @@ export function ProjectSwitcher({ onNavigate, compact = false }: { onNavigate?: 
         <DropdownMenuItem onSelect={() => { router.push("/projetos"); onNavigate?.() }}>
           <Columns3/> Abrir quadro Kanban
         </DropdownMenuItem>
-        {canCreate ? (
-          <DropdownMenuItem onSelect={() => setOpen(true)}>
-            <Plus/> Novo projeto
-          </DropdownMenuItem>
-        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
-    <NewProjectDialog
-      open={open}
-      onOpenChange={setOpen}
-      saving={saving}
-      setSaving={setSaving}
-      onCreated={() => {
-        router.push("/projetos")
-        onNavigate?.()
-      }}
-      createProject={createProject}
-    />
   </>
 }
 type CreateProject = ReturnType<typeof useDashboard>["createProject"]
 
-function NewProjectDialog({
+export function NewProjectDialog({
   open,
   onOpenChange,
   saving,

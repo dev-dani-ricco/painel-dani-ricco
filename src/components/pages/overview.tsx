@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { ArrowRight, CalendarDays, Check, Circle, Clock3, Flag, Sparkles } from "lucide-react"
+import { ArrowRight, ArrowUpRight, AtSign, CalendarDays, Check, Circle, Clock3, Flag, Globe2, Link2, PanelsTopLeft, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import { useDashboard } from "@/components/data-provider"
 import { TaskSheet } from "@/components/entity-editors"
@@ -11,14 +11,21 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
+import { DANI_ECOSYSTEM_RESOURCES } from "@/lib/dani-ecosystem"
 import type { Task } from "@/lib/types"
 
 const phases = ["Produto", "Oferta", "Produção", "Pré-Lançamento", "Lançamento", "Debriefing"]
 const milestones = [["19/09", "Último Workshop Imagem que Vende de 2026"], ["26/09", "Início da campanha de antecipação e Lista VIP"], ["26/10", "Intensificação da campanha"], ["06/11", "Lançamento oficial e abertura do carrinho"]]
+const ecosystemIcons = {
+  site: Globe2,
+  bio: PanelsTopLeft,
+  landing_page: Link2,
+  social: AtSign,
+} as const
 
 export function OverviewPage() {
   const router = useRouter()
-  const { data, progress, update } = useDashboard()
+  const { data, progress, update, projects, activeProjectId, setActiveProject } = useDashboard()
   const [selected, setSelected] = React.useState<Task | null>(null)
   const [taskOpen, setTaskOpen] = React.useState(false)
   const focusTitles = ["Validar estrutura e módulos do curso", "Definir dois dias de gravação", "Aprovar linha editorial da campanha", "Enviar provas e depoimentos do Workshop Imagem que Vende"]
@@ -28,8 +35,72 @@ export function OverviewPage() {
   const toggle = (task: Task) => update("tasks", data.tasks.map((item) => item.id === task.id ? { ...item, done: !item.done, status: !item.done ? "Concluído" : "A iniciar" } : item))
   const open = (task: Task) => { setSelected(task); setTaskOpen(true) }
   const approve = (task: Task) => { update("tasks", data.tasks.map((item) => item.id === task.id ? { ...item, done: true, status: "Concluído" } : item)); toast.success("Material aprovado.") }
+  const openProject = (projectId: string) => {
+    setActiveProject(projectId)
+    router.push("/projetos")
+  }
 
   return <div className="space-y-8">
+    <section>
+      <SectionHeading eyebrow="ECOSSISTEMA DIGITAL" title="Central da Dani"/>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {DANI_ECOSYSTEM_RESOURCES
+          .slice()
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((resource) => {
+            const Icon = ecosystemIcons[resource.category]
+            return <a
+              key={resource.key}
+              href={resource.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group rounded-xl border border-white/[.08] bg-card p-5 transition hover:-translate-y-0.5 hover:border-primary/30"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <span className="grid size-9 place-items-center rounded-lg border border-white/[.08] bg-black/20 text-primary"><Icon className="size-4"/></span>
+                <ArrowUpRight className="size-4 text-zinc-700 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary"/>
+              </div>
+              <p className="mt-5 text-[9px] font-semibold uppercase tracking-[.16em] text-zinc-700">{resource.eyebrow}</p>
+              <h3 className="mt-1 text-sm font-semibold text-zinc-200">{resource.title}</h3>
+              <p className="mt-2 text-[11px] leading-5 text-zinc-600">{resource.description}</p>
+              <div className="mt-4 flex items-center gap-2 text-[9px] text-zinc-700">
+                <span className="size-1.5 rounded-full bg-primary"/>
+                {resource.source === "painel-dani-ricco" ? "Fonte interna conectada" : "Recurso externo mapeado"}
+              </div>
+            </a>
+          })}
+      </div>
+      <p className="mt-3 text-[10px] leading-5 text-zinc-700">Os links públicos desta estrutura usam o mesmo registro central do painel. Hoje a aplicação identifica site oficial, bio site, Diagnóstico IMPAR® e Instagram; novas LPs entram neste inventário sem duplicar a fonte.</p>
+    </section>
+
+    <section>
+      <SectionHeading eyebrow="PROJETOS" title="Escolha onde o time vai trabalhar" action={<TextLink onClick={() => router.push("/projetos")}>Gerenciar projetos</TextLink>}/>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {projects.map((project) => <button
+          type="button"
+          key={project.id}
+          onClick={() => openProject(project.id)}
+          className={"rounded-xl border p-5 text-left transition hover:-translate-y-0.5 " + (project.id === activeProjectId ? "border-primary/35 bg-primary/[.04]" : "border-white/[.08] bg-card hover:border-white/15")}
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[9px] font-semibold uppercase tracking-[.16em] text-zinc-700">{project.projectType}</p>
+              <h3 className="mt-1 truncate text-sm font-semibold text-zinc-200">{project.name}</h3>
+            </div>
+            <ArrowRight className="size-4 shrink-0 text-zinc-700"/>
+          </div>
+          <p className="mt-3 line-clamp-2 text-[11px] leading-5 text-zinc-600">{project.objective || project.description || "Projeto sem descrição."}</p>
+          <div className="mt-4 flex flex-wrap gap-2 text-[9px] text-zinc-600">
+            <span>{project.status}</span>
+            <span>·</span>
+            <span>{project.cards.length} cards</span>
+            <span>·</span>
+            <span>{project.stages.length} etapas</span>
+          </div>
+        </button>)}
+      </div>
+    </section>
+
     <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-card p-6 sm:p-8 lg:p-10">
       <div className="absolute inset-y-0 right-0 hidden w-2/5 lg:block [background-image:radial-gradient(circle_at_70%_30%,rgba(255,106,0,.12),transparent_27%),linear-gradient(135deg,transparent_45%,rgba(255,255,255,.04)_45%,rgba(255,255,255,.04)_46%,transparent_46%)]"/>
       <div className="relative max-w-3xl"><div className="flex flex-wrap items-center gap-3"><p className="eyebrow">PRODUTO DIGITAL · 2026</p><StatusBadge status={data.product.status}/></div><h1 className="mt-6 text-4xl font-semibold tracking-[-.045em] sm:text-5xl lg:text-6xl">{data.product.name}</h1><p className="mt-3 text-base font-medium text-primary sm:text-lg">{data.product.concept}</p><p className="mt-6 max-w-2xl text-sm leading-7 text-zinc-400">{data.product.description}</p><div className="mt-8 flex flex-wrap items-center gap-3"><Button className="h-10 px-4 text-xs text-black" onClick={() => router.push("/calendario")}><CalendarDays/>Ver calendário</Button><div className="ml-0 min-w-52 flex-1 sm:ml-3 sm:max-w-xs"><div className="mb-2 flex justify-between text-[10px]"><span className="text-zinc-500">Progresso geral</span><span className="font-semibold text-primary">{progress}%</span></div><Progress value={progress} className="h-1.5 bg-white/[.08]"/></div></div></div>

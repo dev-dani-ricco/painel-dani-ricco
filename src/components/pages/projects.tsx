@@ -6,7 +6,9 @@ import {
   Plus, Target, Users,
 } from "lucide-react"
 import { toast } from "sonner"
+import { useAuth } from "@/components/auth-provider"
 import { useDashboard } from "@/components/data-provider"
+import { NewProjectDialog } from "@/components/project-switcher"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -20,8 +22,12 @@ import { Textarea } from "@/components/ui/textarea"
 import type { Priority, ProjectCard, ProjectStage } from "@/lib/types"
 
 export function ProjectsPage() {
-  const { activeProject, updateProject } = useDashboard()
+  const { user } = useAuth()
+  const { activeProject, updateProject, createProject } = useDashboard()
   const [cardOpen, setCardOpen] = React.useState(false)
+  const [newProjectOpen, setNewProjectOpen] = React.useState(false)
+  const [newProjectSaving, setNewProjectSaving] = React.useState(false)
+  const canCreateProject = ["owner", "admin", "editor", "system"].includes(user?.role || "")
   const [defaultStageId, setDefaultStageId] = React.useState("")
   const [stageName, setStageName] = React.useState("")
   const [stageSaving, setStageSaving] = React.useState(false)
@@ -79,6 +85,15 @@ export function ProjectsPage() {
   }
 
   return <div className="space-y-6">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p className="eyebrow">PROJETOS</p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-[-.03em]">Gestão dos projetos</h1>
+        <p className="mt-1 max-w-2xl text-xs leading-5 text-zinc-600">Troque o projeto pelo menu lateral. A criação e estruturação de novos projetos começa aqui.</p>
+      </div>
+      {canCreateProject ? <Button onClick={() => setNewProjectOpen(true)} className="self-start sm:self-auto"><Plus/>Novo projeto</Button> : null}
+    </div>
+
     <section className="rounded-2xl border border-white/[.08] bg-card p-5 sm:p-7">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="max-w-3xl">
@@ -182,6 +197,14 @@ export function ProjectsPage() {
       )}
     </section>
 
+    <NewProjectDialog
+      open={newProjectOpen}
+      onOpenChange={setNewProjectOpen}
+      saving={newProjectSaving}
+      setSaving={setNewProjectSaving}
+      onCreated={() => setNewProjectOpen(false)}
+      createProject={createProject}
+    />
     <NewCardDialog
       open={cardOpen}
       onOpenChange={setCardOpen}
