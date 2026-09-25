@@ -53,6 +53,7 @@ async function waitForServer(url, timeout = 90000) {
 }
 
 const externalBaseUrl = process.env.QA_BASE_URL?.replace(/\/+$/, "")
+const shareUrl = process.env.QA_SHARE_URL
 let server = null
 let baseUrl = externalBaseUrl
 
@@ -81,6 +82,7 @@ try {
   browser = await chromium.launch({ headless: true, executablePath })
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } })
   const page = await context.newPage()
+  if (shareUrl) await page.goto(shareUrl, { waitUntil: "domcontentloaded" })
 
   const publicAsset = await context.request.get(baseUrl + "/dani/logo-branca.png")
   if (publicAsset.status() !== 200 || !String(publicAsset.headers()["content-type"] || "").startsWith("image/")) {
