@@ -21,6 +21,7 @@ export type KnowledgeSource = {
   storage_path: string | null
   status: string
   extracted_text: string | null
+  metadata: Record<string, unknown>
   created_at: string
 }
 export function ensureKnowledgeSchema() {
@@ -72,6 +73,7 @@ export function ensureKnowledgeSchema() {
       USING GIN (to_tsvector('simple', COALESCE(title, '') || ' ' || COALESCE(extracted_text, '')))
     `
     const seeds = [
+      ["dani-clone", "dani-clone", "Clone da Dani", "Memória central compartilhada do ecossistema Dani Ricco."],
       ["dani-institucional", "dani-institucional", "Dani Ricco · Institucional", "Método IMPAR, posicionamento, comunicação e repertório institucional."],
       ["painel-dani", "painel-dani", "Painel Dani Ricco", "Conhecimento operacional do painel, lançamento e produtos digitais."],
       ["impar-outfit", "impar-outfit", "IMPAR OUTFIT", "Conhecimento autorizado para o Universo ÍMPAR e seus produtos."],
@@ -111,7 +113,7 @@ export async function listKnowledgeSources(projectId: string): Promise<Knowledge
   await ensureKnowledgeSchema()
   const rows = await getSql()`
     SELECT id, project_id, kind, title, original_filename, mime_type,
-           size_bytes, storage_path, status, extracted_text, created_at
+           size_bytes, storage_path, status, extracted_text, metadata, created_at
     FROM dani_knowledge_sources
     WHERE project_id = ${projectId}
     ORDER BY created_at DESC
@@ -146,7 +148,7 @@ export async function createKnowledgeSource(input: {
       ${JSON.stringify(input.metadata ?? {})}::jsonb
     )
     RETURNING id, project_id, kind, title, original_filename, mime_type,
-              size_bytes, storage_path, status, extracted_text, created_at
+              size_bytes, storage_path, status, extracted_text, metadata, created_at
   ` as KnowledgeSource[]
   return rows[0]
 }
@@ -201,4 +203,75 @@ export async function retrieveKnowledge(projectId: string, query: string, limit 
     LIMIT ${limit}
   `
   return fallback as unknown as typeof rows
+}
+
+export async function listCloneSources(limit = 120): Promise<KnowledgeSource[]> {
+  await ensureKnowledgeSchema()
+  const rows = await getSql()`
+    SELECT id, project_id, kind, title, original_filename, mime_type,
+           size_bytes, storage_path, status, extracted_text, metadata, created_at
+    FROM dani_knowledge_sources
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `
+  return rows as unknown as KnowledgeSource[]
+}
+
+export async function retrieveClone(query: string, limit = 10) {
+  await ensureKnowledgeSchema()
+  const sql = getSql()
+  const rows = await sql`
+    SELECT id, title, kind, original_filename, extracted_text, metadata,
+           ts_rank_cd(
+             to_tsvector(
+               'simple',
+               COALESCE(title, '') || ' ' ||
+               COALESCE(extracted_text, '') || ' ' ||
+               COALESCE(metadata::text, '')
+             ),
+             websearch_to_tsquery('simple', ${query})
+           ) AS score
+    FROM dani_knowledge_sources
+    WHERE extracted_text IS NOT NULL
+      AND to_tsvector(
+            'simple',
+            COALESCE(title, '') || ' ' ||
+            COALESCE(extracted_text, '') || ' ' ||
+            COALESCE(metadata::text, '')
+          ) @@ websearch_to_tsquery('simple', ${query})
+    ORDER BY score DESC, created_at DESC
+    LIMIT ${limit}
+  ` as Array<{
+    id: string
+    title: string
+    kind: string
+    original_filename: string | null
+    extracted_text: string
+    metadata: Record<string, unknown>
+    score: number
+  }>
+
+  if (rows.length) return rows
+
+  const fallback = await sql`
+    SELECT id, title, kind, original_filename, extracted_text, metadata, 0::float AS score
+    FROM dani_knowledge_sources
+    WHERE extracted_text IS NOT NULL
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `
+  return fallback as unknown as typeof rows
+}
+
+export async function getCloneCoverage() {
+  await ensureKnowledgeSchema()
+  const rows = await getSql()`
+    SELECT COALESCE(metadata->>'topic', 'unclassified') AS topic, COUNT(*)::int AS count
+    FROM dani_knowledge_sources
+    GROUP BY COALESCE(metadata->>'topic', 'unclassified')
+  ` as Array<{ topic: string; count: number }>
+
+  const coverage: Record<string, number> = {}
+  for (const row of rows) coverage[row.topic] = Number(row.count)
+  return coverage
 }

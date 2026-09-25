@@ -1,15 +1,12 @@
-import OpenAI from "openai"
+import { experimental_transcribe as transcribe } from "ai"
+import { createGateway } from "@ai-sdk/gateway"
+import { cloneAI } from "@/lib/clone-ai"
 
 export type ProcessingResult = {
   extractedText: string | null
   status: "ready" | "stored"
   processor: string
   warning?: string
-}
-
-function openAIClient() {
-  const apiKey = process.env.OPENAI_API_KEY
-  return apiKey ? new OpenAI({ apiKey }) : null
 }
 
 export function classifyKnowledgeKind(file: File): "file" | "audio" | "image" {
@@ -23,7 +20,7 @@ function isPlainText(file: File) {
     ["application/json", "application/xml", "application/csv"].includes(file.type) ||
     /\.(txt|md|csv|json|xml|yaml|yml)$/i.test(file.name)
 }
-export async function processKnowledgeFile(file: File): Promise<ProcessingResult> {
+export async function processKnowledgeFile(file: File, request?: Request): Promise<ProcessingResult> {
   if (isPlainText(file)) {
     return {
       extractedText: (await file.text()).slice(0, 500_000),
@@ -32,18 +29,31 @@ export async function processKnowledgeFile(file: File): Promise<ProcessingResult
     }
   }
 
-  const client = openAIClient()
-  if (!client) {
+  const ai = cloneAI(request)
+  if (!ai) {
     return {
       extractedText: null,
       status: "stored",
       processor: "none",
-      warning: "OPENAI_API_KEY_NOT_CONFIGURED",
+      warning: "AI_ENGINE_NOT_AVAILABLE",
     }
   }
 
   if (file.type.startsWith("audio/")) {
-    const transcription = await client.audio.transcriptions.create({
+    if (ai.source === "vercel-gateway") {
+      const gateway = createGateway({ apiKey: ai.authToken })
+      const result = await transcribe({
+        model: gateway.transcriptionModel("openai/gpt-4o-transcribe"),
+        audio: Buffer.from(await file.arrayBuffer()),
+      })
+      return {
+        extractedText: result.text,
+        status: "ready",
+        processor: "vercel-ai-gateway-transcription",
+      }
+    }
+
+    const transcription = await ai.client.audio.transcriptions.create({
       file,
       model: process.env.OPENAI_TRANSCRIPTION_MODEL || "gpt-4o-transcribe",
     })
@@ -56,8 +66,8 @@ export async function processKnowledgeFile(file: File): Promise<ProcessingResult
   if (file.type.startsWith("image/")) {
     const bytes = Buffer.from(await file.arrayBuffer())
     const dataUrl = `data:${file.type || "image/jpeg"};base64,${bytes.toString("base64")}`
-    const response = await client.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-5",
+    const response = await ai.client.responses.create({
+      model: ai.fastModel,
       store: false,
       instructions: "Extraia informação útil desta imagem para uma base de conhecimento. Descreva fatos visíveis, textos legíveis, contexto e lacunas. Não invente.",
       input: [{
@@ -77,8 +87,8 @@ export async function processKnowledgeFile(file: File): Promise<ProcessingResult
 
   const bytes = Buffer.from(await file.arrayBuffer())
   const fileData = `data:${file.type || "application/octet-stream"};base64,${bytes.toString("base64")}`
-  const response = await client.responses.create({
-    model: process.env.OPENAI_MODEL || "gpt-5",
+  const response = await ai.client.responses.create({
+    model: ai.fastModel,
     store: false,
     instructions: [
       "Extraia o conteúdo útil deste arquivo para uma base de conhecimento privada.",

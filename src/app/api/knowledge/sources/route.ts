@@ -2,8 +2,11 @@ import { randomUUID } from "node:crypto"
 import { NextResponse } from "next/server"
 import {
   createKnowledgeSource,
+  listCloneSources,
   listKnowledgeSources,
 } from "@/lib/knowledge-db"
+import { classifyCloneContent } from "@/lib/clone-classification"
+import { currentSession } from "@/lib/auth-server"
 import {
   classifyKnowledgeKind,
   processKnowledgeFile,
@@ -18,8 +21,9 @@ const MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 export async function GET(request: Request) {
   try {
     const projectId = new URL(request.url).searchParams.get("projectId")?.trim()
-    if (!projectId) return NextResponse.json({ error: "PROJECT_REQUIRED" }, { status: 400 })
-    const sources = await listKnowledgeSources(projectId)
+    const sources = projectId
+      ? await listKnowledgeSources(projectId)
+      : await listCloneSources()
     return NextResponse.json({ sources })
   } catch (error) {
     console.error("knowledge sources GET failed", error)
@@ -35,27 +39,39 @@ export async function POST(request: Request) {
         title?: string
         content?: string
       }
-      const projectId = body.projectId?.trim()
+      const projectId = body.projectId?.trim() || "dani-clone"
       const content = body.content?.trim()
-      if (!projectId || !content) {
-        return NextResponse.json({ error: "PROJECT_AND_CONTENT_REQUIRED" }, { status: 400 })
+      if (!content) {
+        return NextResponse.json({ error: "CONTENT_REQUIRED" }, { status: 400 })
       }
+      const session = await currentSession()
+      const classification = await classifyCloneContent({
+        request,
+        text: content,
+        title: body.title?.trim() || content.slice(0, 80),
+      })
       const source = await createKnowledgeSource({
         projectId,
         kind: "note",
         title: body.title?.trim() || content.slice(0, 80),
         status: "ready",
         extractedText: content,
-        metadata: { processor: "operator-note" },
+        metadata: {
+          processor: "operator-note",
+          ...classification,
+          contributor: session?.username || null,
+          contributorName: session?.displayName || null,
+          sourceMode: "direct-memory",
+        },
       })
       return NextResponse.json({ source }, { status: 201 })
     }
 
     const form = await request.formData()
-    const projectId = String(form.get("projectId") || "").trim()
+    const projectId = String(form.get("projectId") || "dani-clone").trim() || "dani-clone"
     const file = form.get("file")
-    if (!projectId || !(file instanceof File)) {
-      return NextResponse.json({ error: "PROJECT_AND_FILE_REQUIRED" }, { status: 400 })
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: "FILE_REQUIRED" }, { status: 400 })
     }
     if (!file.size) return NextResponse.json({ error: "EMPTY_FILE" }, { status: 400 })
     if (file.size > MAX_UPLOAD_BYTES) {
@@ -66,7 +82,7 @@ export async function POST(request: Request) {
     const stored = await storeKnowledgeFile({ projectId, sourceId, file })
     let processed
     try {
-      processed = await processKnowledgeFile(file)
+      processed = await processKnowledgeFile(file, request)
     } catch (error) {
       console.error("knowledge file processing failed", error)
       processed = {
@@ -76,6 +92,13 @@ export async function POST(request: Request) {
         warning: error instanceof Error ? error.name : "PROCESSING_FAILED",
       }
     }
+
+    const session = await currentSession()
+    const classification = await classifyCloneContent({
+      request,
+      text: processed.extractedText || "",
+      title: file.name,
+    })
 
     const source = await createKnowledgeSource({
       id: sourceId,
@@ -92,6 +115,10 @@ export async function POST(request: Request) {
         storageProvider: stored.provider,
         processor: processed.processor,
         warning: processed.warning ?? null,
+        ...classification,
+        contributor: session?.username || null,
+        contributorName: session?.displayName || null,
+        sourceMode: "uploaded-source",
       },
     })
     return NextResponse.json({
