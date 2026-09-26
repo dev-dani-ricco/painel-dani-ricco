@@ -8,6 +8,25 @@ export type ProjectStage = {
   order: number
 }
 
+export type ProjectChecklistItem = {
+  id: string
+  title: string
+  done: boolean
+}
+
+export type ProjectCardComment = {
+  id: string
+  author: string
+  body: string
+  createdAt: string
+}
+
+export type ProjectCardAttachment = {
+  id: string
+  name: string
+  url: string
+}
+
 export type ProjectCard = {
   id: string
   title: string
@@ -16,6 +35,12 @@ export type ProjectCard = {
   dueDate: string
   priority: Priority
   description: string
+  createdBy?: string
+  mentionedUsers?: string[]
+  checklist?: ProjectChecklistItem[]
+  comments?: ProjectCardComment[]
+  attachments?: ProjectCardAttachment[]
+  dependencies?: string[]
 }
 
 export type Project = {

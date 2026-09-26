@@ -1,6 +1,7 @@
 export const FEATURES = [
   { key: "overview", label: "Visão Geral", href: "/" },
   { key: "calendario", label: "Calendário", href: "/calendario" },
+  { key: "minhas_tarefas", label: "Minhas Tarefas", href: "/minhas-tarefas" },
   { key: "inteligencia", label: "Central de Inteligência", href: "/inteligencia" },
   { key: "projetos", label: "Quadro do Projeto", href: "/projetos" },
   { key: "produto", label: "Produto", href: "/produto" },
@@ -28,7 +29,7 @@ export const FEATURE_GROUPS: Array<{
     key: "platform",
     label: "Plataforma",
     description: "Visão geral e ferramentas transversais.",
-    features: ["overview", "calendario", "inteligencia"],
+    features: ["overview", "calendario", "minhas_tarefas", "inteligencia"],
   },
   {
     key: "project",
@@ -50,12 +51,12 @@ export const ROLE_DEFAULTS: Record<PanelRole, FeatureKey[]> = {
   admin: [...ALL],
   system: [...ALL],
   editor: [
-    "overview", "calendario", "inteligencia", "projetos", "produto", "oferta",
+    "overview", "calendario", "minhas_tarefas", "inteligencia", "projetos", "produto", "oferta",
     "curso", "area_de_membros", "producao", "pre_lancamento",
     "lancamento", "debriefing", "materiais",
   ],
   reviewer: [
-    "overview", "calendario", "inteligencia", "projetos", "produto", "oferta",
+    "overview", "calendario", "minhas_tarefas", "inteligencia", "projetos", "produto", "oferta",
     "pre_lancamento", "lancamento", "debriefing", "materiais",
   ],
 }
@@ -72,6 +73,7 @@ export function roleLabel(role: PanelRole) {
 export function routeFeature(pathname: string): FeatureKey | null {
   if (pathname === "/") return "overview"
   if (pathname.startsWith("/calendario")) return "calendario"
+  if (pathname.startsWith("/minhas-tarefas")) return "minhas_tarefas"
   if (pathname.startsWith("/inteligencia") || pathname.startsWith("/api/knowledge/")) return "inteligencia"
   if (pathname.startsWith("/projetos") || pathname.startsWith("/api/projects")) return "projetos"
   if (pathname.startsWith("/produto")) return "produto"

@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils"
 export const navigation = [
   { href: "/", feature: "overview", group: "platform", title: "Visão Geral", short: "Visão Geral", icon: LayoutDashboard },
   { href: "/calendario", feature: "calendario", group: "platform", title: "Calendário", short: "Calendário", icon: CalendarDays },
+  { href: "/minhas-tarefas", feature: "minhas_tarefas", group: "platform", title: "Minhas Tarefas", short: "Tarefas", icon: CheckSquare2 },
   { href: "/inteligencia", feature: "inteligencia", group: "platform", title: "Central de Inteligência", short: "Inteligência", icon: BrainCircuit },
   { href: "/projetos", feature: "projetos", group: "project", title: "Quadro do Projeto", short: "Kanban", icon: Boxes },
   { href: "/produto", feature: "produto", group: "project", title: "Briefing 01 — Produto", short: "Produto", icon: FileText },

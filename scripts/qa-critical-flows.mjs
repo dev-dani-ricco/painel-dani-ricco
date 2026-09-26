@@ -124,6 +124,12 @@ try {
   const headerPosition = await page.locator("header").first().evaluate((el) => getComputedStyle(el).position)
   if (headerPosition !== "fixed") throw new Error("TOPBAR_NOT_FIXED")
 
+  await page.goto(baseUrl + "/minhas-tarefas", { waitUntil: "domcontentloaded" })
+  await page.getByRole("heading", { name: "Minhas Tarefas" }).waitFor({ state: "visible" })
+  await page.getByRole("button", { name: /Atribuídas a mim/ }).waitFor({ state: "visible" })
+  await page.getByText("Uma visão transversal dos cards", { exact: false }).waitFor({ state: "visible" })
+  console.log("QA_MY_TASKS=PASS")
+
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto(baseUrl + "/", { waitUntil: "domcontentloaded" })
   await page.getByText("Central da Dani", { exact: true }).first().waitFor()
