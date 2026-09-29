@@ -44,15 +44,15 @@ export const navigation = [
 ] as const
 
 function Brand({ progress }: { progress?: number }) {
-  return <div className="border-b border-sidebar-border px-5 py-5">
+  return <div className="border-b border-sidebar-border px-6 py-6">
     <div className="flex items-center justify-between gap-3">
-      <Image src="/dani/logo-branca.png" alt="Dani Ricco" width={150} height={50} className="h-auto w-[118px] object-contain" priority unoptimized/>
+      <Image src="/dani/logo-branca.png" alt="Dani Ricco" width={170} height={56} className="h-auto w-[132px] object-contain" priority unoptimized/>
       <div className="text-right">
         <p className="impar-serif text-[18px] leading-none tracking-[.08em] text-zinc-200">IMPAR®</p>
         <div className="mt-2 ml-auto size-2 rounded-full bg-primary shadow-[0_0_14px_rgba(255,106,0,.6)]"/>
       </div>
     </div>
-    <p className="mt-3 text-[8px] font-semibold uppercase tracking-[.2em] text-zinc-700">Plataforma de gestão</p>
+    <p className="mt-3 text-[10px] font-semibold uppercase tracking-[.16em] text-zinc-600">Plataforma de gestão</p>
     {typeof progress === "number" ? <>
       <div className="mt-4 flex items-center justify-between"><span className="text-[10px] text-zinc-500">Progresso do projeto</span><span className="text-[10px] font-semibold text-primary">{progress}%</span></div>
       <Progress value={progress} className="mt-2 h-1 bg-white/[.06]"/>
@@ -81,7 +81,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const links = (items: typeof visibleNavigation, inset = false) => items.map(({ href, title, icon: Icon }) => {
     const active = href === "/" ? pathname === "/" : pathname === href
     return <Link href={href} onClick={onNavigate} key={href} className={cn(
-      "group flex min-h-10 items-center gap-3 rounded-lg px-3 py-2.5 text-[12px] font-medium text-zinc-500 transition hover:bg-sidebar-accent hover:text-zinc-200",
+      "group flex min-h-11 items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13px] font-medium text-zinc-500 transition hover:bg-sidebar-accent hover:text-zinc-100",
       inset && "ml-2 border-l border-white/[.06] pl-4",
       active && "bg-sidebar-accent text-white",
     )}>
@@ -94,18 +94,18 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-sidebar">
     <Brand progress={inProjectContext ? progress : undefined}/>
     <ScrollArea className="min-h-0 flex-1">
-      <nav className="space-y-6 p-3 pb-7">
-        {platformItems.length > 0 && <section><p className="px-3 pb-2 text-[9px] font-semibold uppercase tracking-[.18em] text-zinc-700">Plataforma</p><div className="space-y-1">{links(platformItems)}</div></section>}
+      <nav className="space-y-7 p-4 pb-8">
+        {platformItems.length > 0 && <section><p className="px-3 pb-2.5 text-[10px] font-semibold uppercase tracking-[.16em] text-zinc-600">Plataforma</p><div className="space-y-1">{links(platformItems)}</div></section>}
         {allProjectItems.length > 0 && <section>
-          <p className="px-3 pb-2 text-[9px] font-semibold uppercase tracking-[.18em] text-zinc-700">Projeto</p>
+          <p className="px-3 pb-2.5 text-[10px] font-semibold uppercase tracking-[.16em] text-zinc-600">Projeto</p>
           <div className="overflow-hidden rounded-xl border border-white/[.08] bg-white/[.02]">
             <button
               type="button"
               onClick={() => setProjectExpanded((current) => !current)}
-              className="flex w-full items-center gap-2 px-3 py-3 text-left transition hover:bg-white/[.025]"
+              className="flex w-full items-center gap-2.5 px-3.5 py-3.5 text-left transition hover:bg-white/[.035]"
             >
               <FolderOpen className="size-3.5 shrink-0 text-primary"/>
-              <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-zinc-200">
+              <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-zinc-100">
                 {inProjectContext ? (activeProject?.name || "Carregando projeto…") : "Projetos"}
               </span>
               <ChevronDown className={cn("size-3.5 shrink-0 text-zinc-600 transition-transform", projectExpanded && "rotate-180")}/>
@@ -114,7 +114,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               <ProjectSwitcher compact onNavigate={onNavigate}/>
               <div className="mt-2 space-y-1">{links(projectItems)}</div>
               {inProjectContext && !legacyProject && activeProject?.stages.length ? <div className="mt-3 border-t border-white/[.05] pt-2">
-                <p className="px-2 pb-1.5 text-[8px] font-semibold uppercase tracking-[.16em] text-zinc-700">Etapas</p>
+                <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[.14em] text-zinc-600">Etapas</p>
                 {activeProject.stages
                   .slice()
                   .sort((a, b) => a.order - b.order)
@@ -122,7 +122,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                     key={stage.id}
                     href={"/projetos#stage-" + stage.id}
                     onClick={onNavigate}
-                    className="flex min-h-8 items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] text-zinc-600 transition hover:bg-sidebar-accent hover:text-zinc-300"
+                    className="flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] text-zinc-500 transition hover:bg-sidebar-accent hover:text-zinc-200"
                   >
                     <span className="grid size-5 shrink-0 place-items-center rounded-md border border-white/[.06] text-[8px] text-zinc-700">
                       {String(stage.order).padStart(2, "0")}
@@ -133,15 +133,15 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             </div> : null}
           </div>
         </section>}
-        {adminItems.length > 0 && <section><p className="px-3 pb-2 text-[9px] font-semibold uppercase tracking-[.18em] text-zinc-700">Administração</p><div className="space-y-1">{links(adminItems)}</div></section>}
+        {adminItems.length > 0 && <section><p className="px-3 pb-2.5 text-[10px] font-semibold uppercase tracking-[.16em] text-zinc-600">Administração</p><div className="space-y-1">{links(adminItems)}</div></section>}
       </nav>
     </ScrollArea>
-    <div className="shrink-0 border-t border-sidebar-border bg-sidebar p-4">
+    <div className="shrink-0 border-t border-sidebar-border bg-sidebar p-5">
       <div className="flex items-center gap-3">
         <Avatar className="size-8 shrink-0 border border-white/10"><AvatarFallback className="bg-[#222] text-[10px]">{initials}</AvatarFallback></Avatar>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-semibold">{user?.displayName || user?.username || "Usuário"}</p>
-          <p className="truncate text-[10px] text-zinc-600">{user ? roleLabel(user.role) : "Carregando..."}</p>
+          <p className="truncate text-[13px] font-semibold">{user?.displayName || user?.username || "Usuário"}</p>
+          <p className="truncate text-[11px] text-zinc-500">{user ? roleLabel(user.role) : "Carregando..."}</p>
         </div>
         <Button variant="ghost" size="icon-xs" asChild title="Alterar minha senha"><Link href="/alterar-senha"><KeyRound/></Link></Button>
         <Button variant="ghost" size="icon-xs" onClick={() => void logout()} title="Sair"><LogOut/></Button>
@@ -182,7 +182,7 @@ function DashboardShell({ children, pathname }: { children: React.ReactNode; pat
 
   const SyncIcon = syncStatus === "saving" || syncStatus === "loading" ? LoaderCircle : syncStatus === "saved" ? Cloud : CloudOff
   const syncLabel = syncStatus === "saved" ? "Sincronizado" : syncStatus === "saving" ? "Salvando" : syncStatus === "loading" ? "Conectando" : "Modo offline"
-  return <div className="min-h-screen overflow-x-hidden bg-background"><aside className="fixed inset-y-0 left-0 z-40 hidden h-dvh w-[272px] overflow-hidden border-r border-sidebar-border lg:block"><SidebarContent key={pathname}/></aside><div className="min-w-0 lg:pl-[272px]"><header className="fixed inset-x-0 top-0 z-30 border-b border-white/[.07] bg-background/95 backdrop-blur-xl lg:left-[272px]"><div className="flex h-16 min-w-0 items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:px-8"><Sheet open={mobileOpen} onOpenChange={setMobileOpen}><SheetTrigger asChild><Button variant="ghost" size="icon" className="shrink-0 lg:hidden" aria-label="Abrir menu"><Menu/></Button></SheetTrigger><SheetContent side="left" className="h-dvh max-h-dvh w-[min(92vw,320px)] overflow-hidden border-sidebar-border p-0"><SheetTitle className="sr-only">Navegação</SheetTitle><SidebarContent key={"mobile-" + pathname} onNavigate={() => setMobileOpen(false)}/></SheetContent></Sheet><div className="min-w-0 flex-1 sm:flex-none"><div className="flex min-w-0 items-center gap-1 text-[10px] text-zinc-600"><span className="hidden min-[420px]:inline">Painel</span><ChevronRight className="hidden size-3 min-[420px]:block"/><span className="truncate text-zinc-400">{page.short}</span></div><p className="mt-0.5 max-w-[42vw] truncate text-sm font-semibold sm:max-w-[300px] lg:max-w-[360px]">{topTitle}</p></div>{inProjectContext && activeProject?.status ? <Badge variant="outline" className="hidden shrink-0 rounded-full border-primary/30 bg-primary/[.08] text-[10px] text-primary md:inline-flex">{activeProject.status}</Badge> : null}{inProjectContext ? <div className="ml-auto hidden w-28 items-center gap-2 xl:flex"><Progress value={progress} className="h-1 bg-white/[.08]"/><span className="text-[10px] text-zinc-500">{progress}%</span></div> : <div className="ml-auto"/>}<div className="hidden items-center gap-1.5 text-[10px] text-zinc-500 xl:flex" title="Status da sincronização"><SyncIcon className={cn("size-3.5", syncStatus === "saved" && "text-primary", (syncStatus === "saving" || syncStatus === "loading") && "animate-spin text-zinc-400")} /><span>{syncLabel}</span></div><Button variant="outline" size="icon" className="shrink-0" onClick={() => setSearchOpen(true)} aria-label="Abrir busca"><Search/></Button><Popover><PopoverTrigger asChild><Button variant="outline" size="icon" className="relative" aria-label="Notificações"><Bell/><span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-primary"/></Button></PopoverTrigger><PopoverContent align="end" className="w-80 border-white/10 p-0"><div className="border-b border-border p-4"><p className="text-sm font-semibold">Notificações</p><p className="mt-1 text-xs text-muted-foreground">3 itens precisam da sua atenção.</p></div><div className="space-y-1 p-2">{data.tasks.filter((item) => item.owner === "Dani Ricco" && !item.done).slice(0,3).map((item) => <Link href="/producao" className="block rounded-lg p-3 text-xs hover:bg-muted" key={item.id}><p className="font-medium">{item.title}</p><p className="mt-1 text-[10px] text-muted-foreground">{item.due} · {item.priority}</p></Link>)}</div></PopoverContent></Popover><div className="hidden items-center gap-2 2xl:flex"><UserRound className="size-4 text-zinc-600"/><span className="text-xs font-medium">{user?.displayName || user?.username || "Usuário"}</span></div><Button className="hidden h-9 bg-primary px-4 text-xs text-black hover:bg-primary/90 sm:inline-flex" onClick={() => setTaskOpen(true)}><Plus/>Adicionar tarefa</Button><Button size="icon" className="bg-primary text-black sm:hidden" onClick={() => setTaskOpen(true)} aria-label="Adicionar tarefa"><Plus/></Button></div>{inProjectContext ? <Progress value={progress} className="h-[2px] rounded-none bg-transparent xl:hidden"/> : null}</header><main className="mx-auto w-full max-w-[1600px] px-4 pb-4 pt-20 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8">{children}</main></div><TaskSheet open={taskOpen} onOpenChange={setTaskOpen}/><GlobalSearch open={searchOpen} onOpenChange={setSearchOpen}/></div>
+  return <div className="portal-ui min-h-screen overflow-x-hidden bg-background"><aside className="fixed inset-y-0 left-0 z-40 hidden h-dvh w-[288px] overflow-hidden border-r border-sidebar-border xl:block"><SidebarContent key={pathname}/></aside><div className="min-w-0 xl:pl-[288px]"><header className="fixed inset-x-0 top-0 z-30 border-b border-white/[.08] bg-background/95 shadow-[0_8px_30px_rgba(0,0,0,.12)] backdrop-blur-xl xl:left-[288px]"><div className="flex h-[72px] min-w-0 items-center gap-2.5 px-4 sm:gap-3 sm:px-6 lg:px-8"><Sheet open={mobileOpen} onOpenChange={setMobileOpen}><SheetTrigger asChild><Button variant="ghost" size="icon" className="shrink-0 xl:hidden" aria-label="Abrir menu"><Menu/></Button></SheetTrigger><SheetContent side="left" className="h-dvh max-h-dvh w-[min(92vw,320px)] overflow-hidden border-sidebar-border p-0"><SheetTitle className="sr-only">Navegação</SheetTitle><SidebarContent key={"mobile-" + pathname} onNavigate={() => setMobileOpen(false)}/></SheetContent></Sheet><div className="min-w-0 flex-1 sm:flex-none"><div className="flex min-w-0 items-center gap-1.5 text-xs text-zinc-600"><span className="hidden min-[420px]:inline">Painel</span><ChevronRight className="hidden size-3 min-[420px]:block"/><span className="truncate text-zinc-400">{page.short}</span></div><p className="mt-0.5 max-w-[48vw] truncate text-base font-semibold tracking-[-.015em] sm:max-w-[360px] lg:max-w-[440px]">{topTitle}</p></div>{inProjectContext && activeProject?.status ? <Badge variant="outline" className="hidden shrink-0 rounded-full border-primary/30 bg-primary/[.08] text-[10px] text-primary md:inline-flex">{activeProject.status}</Badge> : null}{inProjectContext ? <div className="ml-auto hidden w-28 items-center gap-2 xl:flex"><Progress value={progress} className="h-1 bg-white/[.08]"/><span className="text-[10px] text-zinc-500">{progress}%</span></div> : <div className="ml-auto"/>}<div className="hidden items-center gap-1.5 text-[10px] text-zinc-500 xl:flex" title="Status da sincronização"><SyncIcon className={cn("size-3.5", syncStatus === "saved" && "text-primary", (syncStatus === "saving" || syncStatus === "loading") && "animate-spin text-zinc-400")} /><span>{syncLabel}</span></div><Button variant="outline" size="icon" className="shrink-0" onClick={() => setSearchOpen(true)} aria-label="Abrir busca"><Search/></Button><Popover><PopoverTrigger asChild><Button variant="outline" size="icon" className="relative" aria-label="Notificações"><Bell/><span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-primary"/></Button></PopoverTrigger><PopoverContent align="end" className="w-80 border-white/10 p-0"><div className="border-b border-border p-4"><p className="text-sm font-semibold">Notificações</p><p className="mt-1 text-xs text-muted-foreground">3 itens precisam da sua atenção.</p></div><div className="space-y-1 p-2">{data.tasks.filter((item) => item.owner === "Dani Ricco" && !item.done).slice(0,3).map((item) => <Link href="/producao" className="block rounded-lg p-3 text-xs hover:bg-muted" key={item.id}><p className="font-medium">{item.title}</p><p className="mt-1 text-[10px] text-muted-foreground">{item.due} · {item.priority}</p></Link>)}</div></PopoverContent></Popover><div className="hidden items-center gap-2 2xl:flex"><UserRound className="size-4 text-zinc-600"/><span className="text-xs font-medium">{user?.displayName || user?.username || "Usuário"}</span></div><Button className="hidden h-9 bg-primary px-4 text-xs text-black hover:bg-primary/90 sm:inline-flex" onClick={() => setTaskOpen(true)}><Plus/>Adicionar tarefa</Button><Button size="icon" className="bg-primary text-black sm:hidden" onClick={() => setTaskOpen(true)} aria-label="Adicionar tarefa"><Plus/></Button></div>{inProjectContext ? <Progress value={progress} className="h-[2px] rounded-none bg-transparent xl:hidden"/> : null}</header><main className="mx-auto w-full max-w-[1720px] px-4 pb-8 pt-[92px] sm:px-6 sm:pb-10 lg:px-10 lg:pb-12">{children}</main></div><TaskSheet open={taskOpen} onOpenChange={setTaskOpen}/><GlobalSearch open={searchOpen} onOpenChange={setSearchOpen}/></div>
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {

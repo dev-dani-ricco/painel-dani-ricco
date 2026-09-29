@@ -72,19 +72,19 @@ export function MyTasksPage() {
     })
   }
 
-  return <div className="space-y-6">
+  return <div className="space-y-8">
     <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
       <div>
         <p className="eyebrow">TRABALHO PESSOAL</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-[-.03em]">Minhas Tarefas</h1>
-        <p className="mt-1 max-w-2xl text-xs leading-5 text-zinc-600">Uma visão transversal dos cards que já pertencem aos projetos. Nada é duplicado: cada alteração volta para o projeto de origem.</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-[-.035em]">Minhas Tarefas</h1>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-500">Uma visão transversal dos cards que já pertencem aos projetos. Nada é duplicado: cada alteração volta para o projeto de origem.</p>
       </div>
       <div className="relative w-full max-w-sm"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-700"/><Input value={query} onChange={(event) => setQuery(event.target.value)} className="pl-9" placeholder="Buscar tarefa ou projeto..."/></div>
     </div>
 
     <div className="flex gap-2 overflow-x-auto pb-1">{views.map(({ id, label, icon: Icon }) => <Button key={id} size="sm" variant={view === id ? "secondary" : "outline"} onClick={() => setView(id)} className="shrink-0"><Icon/>{label}<Badge variant="outline" className="ml-1 border-white/[.07] bg-black/20 text-[9px]">{items.filter((item) => id === "assigned" ? ownerTokens(item.card.owner).some((owner) => identities.has(owner)) && !item.completed : id === "created" ? matchesIdentity(item.card.createdBy) && !item.completed : id === "mentions" ? (item.card.mentionedUsers || []).some(matchesIdentity) && !item.completed : item.completed).length}</Badge></Button>)}</div>
 
-    <section className="overflow-hidden rounded-xl border border-white/[.07] bg-[#111]">
+    <section className="overflow-hidden rounded-2xl border border-white/[.08] bg-[#111] shadow-[0_18px_50px_rgba(0,0,0,.12)]">
       <div className="hidden grid-cols-[minmax(0,2fr)_minmax(160px,1fr)_130px_110px_auto] gap-3 border-b border-white/[.06] px-4 py-2.5 text-[9px] font-semibold uppercase tracking-[.14em] text-zinc-700 md:grid">
         <span>Tarefa</span><span>Projeto / etapa</span><span>Prazo</span><span>Prioridade</span><span></span>
       </div>

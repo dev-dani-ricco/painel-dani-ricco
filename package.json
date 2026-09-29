@@ -9,6 +9,8 @@
     "lint": "eslint",
     "test:invariants": "node scripts/verify-panel-invariants.mjs",
     "qa:critical": "node scripts/qa-critical-flows.mjs",
+    "qa:portal-ux": "node scripts/qa-portal-ux.mjs",
+    "qa:portal-capture": "node scripts/capture-portal-ux.mjs",
     "refresh:ecosystem-previews": "node scripts/refresh-ecosystem-previews.mjs"
   },
   "dependencies": {

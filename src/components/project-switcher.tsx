@@ -43,20 +43,20 @@ export function ProjectSwitcher({ onNavigate, compact = false }: { onNavigate?: 
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         {compact ? (
-          <button className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-zinc-600 transition hover:bg-sidebar-accent hover:text-zinc-300">
+          <button className="flex min-h-9 w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs text-zinc-500 transition hover:bg-sidebar-accent hover:text-zinc-200">
             <Columns3 className="size-3.5 shrink-0"/>
             <span className="min-w-0 flex-1 truncate">Trocar projeto</span>
             <ChevronDown className="size-3.5 shrink-0"/>
           </button>
         ) : (
-          <button className="w-full rounded-xl border border-white/[.08] bg-white/[.025] px-3 py-3 text-left transition hover:border-primary/25 hover:bg-white/[.04]">
+          <button className="w-full rounded-xl border border-white/[.09] bg-white/[.025] px-3.5 py-3.5 text-left transition hover:border-primary/25 hover:bg-white/[.04]">
             <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[.18em] text-zinc-600">
               <FolderOpen className="size-3.5 text-primary"/>
               Projeto
               <ChevronDown className="ml-auto size-3.5"/>
             </div>
             <div className="mt-1.5 flex items-start gap-2">
-              <p className="min-w-0 flex-1 line-clamp-2 text-[11px] font-semibold leading-4 text-zinc-200">
+              <p className="min-w-0 flex-1 line-clamp-2 text-xs font-semibold leading-5 text-zinc-100">
                 {activeProject?.name || "Carregando projeto…"}
               </p>
               {activeProject?.status ? (
@@ -68,19 +68,19 @@ export function ProjectSwitcher({ onNavigate, compact = false }: { onNavigate?: 
           </button>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-72 border-white/10" align="start">
+      <DropdownMenuContent className="w-80 border-white/10 p-2" align="start">
         <DropdownMenuLabel>Projetos</DropdownMenuLabel>
         {projects.map((project) => (
           <DropdownMenuItem
             key={project.id}
             onSelect={() => choose(project.id)}
-            className="gap-2 px-2 py-2.5"
+            className="gap-3 rounded-lg px-3 py-3"
           >
             <span className="grid size-6 place-items-center rounded-md border border-white/[.07] bg-black/20">
               {project.id === activeProjectId ? <Check className="size-3 text-primary"/> : <FolderOpen className="size-3 text-zinc-600"/>}
             </span>
             <span className="min-w-0">
-              <span className="block truncate text-xs">{project.name}</span>
+              <span className="block truncate text-sm font-medium">{project.name}</span>
               <span className="block truncate text-[9px] text-zinc-600">{project.projectType} · {project.status}</span>
             </span>
           </DropdownMenuItem>

@@ -81,6 +81,163 @@
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 999px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
+/* Internal portal UX system */
+body:has(.portal-ui) {
+  --portal-sidebar-width: 18rem;
+  --portal-header-height: 4.5rem;
+  color-scheme: dark;
+  font-feature-settings: "ss01" 1, "cv02" 1, "cv03" 1;
+}
+
+body:has(.portal-ui) .impar-serif {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+body:has(.portal-ui) .eyebrow {
+  font-size: .6875rem;
+  line-height: 1rem;
+  letter-spacing: .14em;
+  color: #a1a1aa;
+}
+
+body:has(.portal-ui) [class~="text-[8px]"],
+body:has(.portal-ui) [class~="text-[9px]"] {
+  font-size: .6875rem !important;
+  line-height: 1rem !important;
+}
+
+body:has(.portal-ui) [class~="text-[10px]"],
+body:has(.portal-ui) [class~="text-[11px]"] {
+  font-size: .75rem !important;
+  line-height: 1.125rem !important;
+}
+
+body:has(.portal-ui) [class~="text-zinc-700"] { color: #71717a !important; }
+body:has(.portal-ui) [class~="text-zinc-600"] { color: #8f8f99 !important; }
+body:has(.portal-ui) [class~="text-zinc-500"] { color: #a1a1aa !important; }
+
+body:has(.portal-ui) main h1 {
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+body:has(.portal-ui) main h2,
+body:has(.portal-ui) main h3 {
+  line-height: 1.25;
+}
+
+body:has(.portal-ui) main p {
+  text-wrap: pretty;
+}
+
+body:has(.portal-ui) [data-slot="button"][data-size="default"] { min-height: 2.5rem; padding-inline: .875rem; }
+body:has(.portal-ui) [data-slot="button"][data-size="sm"] { min-height: 2.25rem; padding-inline: .75rem; }
+body:has(.portal-ui) [data-slot="button"][data-size="xs"] { min-height: 1.875rem; }
+body:has(.portal-ui) [data-slot="button"][data-size="icon"] { min-width: 2.5rem; min-height: 2.5rem; }
+body:has(.portal-ui) [data-slot="button"][data-size="icon-sm"] { min-width: 2.25rem; min-height: 2.25rem; }
+body:has(.portal-ui) [data-slot="button"][data-size="icon-xs"] { min-width: 1.875rem; min-height: 1.875rem; }
+
+body:has(.portal-ui) [data-slot="input"],
+body:has(.portal-ui) [data-slot="select-trigger"] {
+  min-height: 2.5rem;
+}
+
+body:has(.portal-ui) [data-slot="textarea"] {
+  min-height: 5.5rem;
+  line-height: 1.55;
+}
+
+body:has(.portal-ui) [data-slot="select-item"],
+body:has(.portal-ui) [data-slot="command-item"],
+body:has(.portal-ui) [role="menuitem"],
+body:has(.portal-ui) [role="option"] {
+  min-height: 2.25rem;
+}
+
+body:has(.portal-ui) [data-slot="tabs-list"] {
+  min-height: 2.5rem;
+}
+
+body:has(.portal-ui) [data-slot="tabs-trigger"] {
+  min-height: 2.125rem;
+  padding-inline: .75rem;
+}
+
+body:has(.portal-ui) [data-slot="badge"] {
+  min-height: 1.5rem;
+  padding-inline: .625rem;
+}
+
+body:has(.portal-ui) [data-slot="card"] {
+  border-color: rgb(255 255 255 / 10%);
+  box-shadow: 0 18px 50px rgb(0 0 0 / 14%);
+}
+
+body:has(.portal-ui) [data-slot="table-head"] {
+  min-height: 2.75rem;
+  padding-inline: .75rem;
+}
+
+body:has(.portal-ui) [data-slot="table-cell"] {
+  padding: .75rem;
+}
+
+body:has(.portal-ui) [data-slot="dialog-overlay"] {
+  background: rgb(0 0 0 / 56%);
+  backdrop-filter: blur(6px);
+}
+
+body:has(.portal-ui) [data-slot="dialog-content"] {
+  max-height: min(88dvh, 54rem);
+  overflow-y: auto;
+  border-color: rgb(255 255 255 / 11%);
+  box-shadow: 0 28px 100px rgb(0 0 0 / 45%);
+}
+
+body:has(.portal-ui) [data-slot="sheet-overlay"] {
+  background: rgb(0 0 0 / 56%);
+  backdrop-filter: blur(6px);
+}
+
+body:has(.portal-ui) [data-slot="sheet-content"] {
+  border-color: rgb(255 255 255 / 11%);
+  box-shadow: -24px 0 80px rgb(0 0 0 / 38%);
+}
+
+body:has(.portal-ui) [data-slot="sheet-header"] {
+  gap: .375rem;
+}
+
+body:has(.portal-ui) [data-slot="sheet-title"] {
+  font-size: 1.125rem;
+  line-height: 1.4;
+}
+
+body:has(.portal-ui) [data-slot="sheet-description"] {
+  line-height: 1.55;
+}
+
+body:has(.portal-ui) :where(button, a, input, textarea, [role="button"], [role="menuitem"], [role="option"]) {
+  scroll-margin: 6rem;
+}
+
+@media (max-width: 640px) {
+  body:has(.portal-ui) [data-slot="button"][data-size="default"],
+  body:has(.portal-ui) [data-slot="button"][data-size="icon"] {
+    min-height: 2.75rem;
+  }
+
+  body:has(.portal-ui) [data-slot="input"],
+  body:has(.portal-ui) [data-slot="select-trigger"] {
+    min-height: 2.75rem;
+  }
+
+  body:has(.portal-ui) main {
+    font-size: .875rem;
+  }
+}
 
 /* Public IMPAR® experience */
 .impar-public {

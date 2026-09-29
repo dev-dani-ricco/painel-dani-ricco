@@ -88,17 +88,17 @@ export function ProjectsPage() {
     setCardOpen(true)
   }
 
-  return <div className="space-y-6">
+  return <div className="space-y-8">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p className="eyebrow">PROJETOS</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-[-.03em]">Gestão dos projetos</h1>
-        <p className="mt-1 max-w-2xl text-xs leading-5 text-zinc-600">Troque o projeto pelo menu lateral. A criação e estruturação de novos projetos começa aqui.</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-[-.035em]">Gestão dos projetos</h1>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-500">Troque o projeto pelo menu lateral. A criação e estruturação de novos projetos começa aqui.</p>
       </div>
       {canCreateProject ? <Button onClick={() => setNewProjectOpen(true)} className="self-start sm:self-auto"><Plus/>Novo projeto</Button> : null}
     </div>
 
-    <section className="rounded-2xl border border-white/[.08] bg-card p-5 sm:p-7">
+    <section className="rounded-2xl border border-white/[.09] bg-card p-6 shadow-[0_20px_60px_rgba(0,0,0,.12)] sm:p-8">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="max-w-3xl">
           <div className="flex flex-wrap items-center gap-2">
@@ -113,7 +113,7 @@ export function ProjectsPage() {
           <h1 className="mt-3 text-3xl font-semibold tracking-[-.04em] sm:text-4xl">
             {activeProject.name}
           </h1>
-          <p className="mt-3 text-sm leading-6 text-zinc-500">
+          <p className="mt-4 max-w-4xl text-sm leading-7 text-zinc-400 sm:text-[15px]">
             {activeProject.objective || activeProject.description || "Defina o objetivo central deste projeto."}
           </p>
           {activeProject.successCriteria ? (
@@ -142,7 +142,7 @@ export function ProjectsPage() {
         <div>
           <p className="eyebrow">EXECUÇÃO</p>
           <h2 className="mt-1 text-xl font-semibold">Fluxo do projeto</h2>
-          <p className="mt-1 text-xs text-zinc-600">Os mesmos cards podem ser acompanhados em Kanban, Lista ou Calendário.</p>
+          <p className="mt-2 text-sm leading-6 text-zinc-500">Os mesmos cards podem ser acompanhados em Kanban, Lista ou Calendário.</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="grid grid-cols-3 rounded-lg border border-white/[.08] bg-black/15 p-1">
@@ -370,7 +370,7 @@ function KanbanColumn({
 }) {
   return <div
     id={"stage-" + stage.id}
-    className="w-[292px] shrink-0 scroll-mt-24 rounded-xl border border-white/[.07] bg-[#111] p-3"
+    className="w-[320px] shrink-0 scroll-mt-28 rounded-xl border border-white/[.08] bg-[#111] p-4"
     onDragOver={(event) => event.preventDefault()}
     onDrop={(event) => {
       event.preventDefault()
@@ -407,7 +407,7 @@ function KanbanCard({ card, stages, onMove, onOpen }: { card: ProjectCard; stage
       event.dataTransfer.setData("text/project-card", card.id)
       event.dataTransfer.effectAllowed = "move"
     }}
-    className="cursor-grab rounded-lg border border-white/[.08] bg-[#191919] p-3 shadow-sm active:cursor-grabbing"
+    className="cursor-grab rounded-xl border border-white/[.09] bg-[#191919] p-4 shadow-sm transition hover:border-white/[.14] active:cursor-grabbing"
   >
 
     <div className="flex items-start gap-2">

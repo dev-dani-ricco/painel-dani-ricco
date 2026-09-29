@@ -136,25 +136,25 @@ export function AccessManagement() {
       : [...user.permissions, feature]
     update(user.id, { permissions: next })
   }
-  return <><Card className="border-white/[.08] bg-card py-0">
-    <CardHeader className="border-b border-white/[.06] p-6 sm:p-7">
+  return <><Card className="border-white/[.09] bg-card py-0 shadow-[0_18px_55px_rgba(0,0,0,.12)]">
+    <CardHeader className="border-b border-white/[.07] p-6 sm:p-8">
       <div className="flex items-center gap-3">
-        <div className="flex size-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/[.06]">
+        <div className="flex size-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/[.06]">
           <UserCog className="size-4 text-primary"/>
         </div>
         <div>
-          <CardTitle className="text-base">Usuários e acessos</CardTitle>
+          <CardTitle className="text-lg">Usuários e acessos</CardTitle>
           <CardDescription>Organize o acesso por área e abra somente o que cada pessoa realmente precisa usar.</CardDescription>
         </div>
       </div>
     </CardHeader>
-    <CardContent className="p-6 sm:p-7">
+    <CardContent className="p-6 sm:p-8">
       {loading ? <div className="flex items-center gap-2 py-8 text-sm text-zinc-500"><LoaderCircle className="size-4 animate-spin"/>Carregando usuários…</div> : <div className="space-y-5">
-        {users.map((user) => <div key={user.id} className="rounded-xl border border-white/[.08] bg-black/15 p-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        {users.map((user) => <div key={user.id} className="rounded-2xl border border-white/[.08] bg-black/15 p-5 sm:p-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="font-semibold">{user.displayName}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-base font-semibold">{user.displayName}</p>
                 <span className="rounded border border-white/10 px-1.5 py-0.5 text-[9px] tracking-wider text-zinc-500">{user.username}</span>
                 {user.active && <ShieldCheck className="size-3.5 text-primary"/>}
                 {user.mustChangePassword && (
@@ -165,7 +165,7 @@ export function AccessManagement() {
               </div>
             </div>
             <Select value={user.role} onValueChange={(value) => update(user.id, { role: value as PanelRole })}>
-              <SelectTrigger className="w-full lg:w-48"><SelectValue/></SelectTrigger>
+              <SelectTrigger className="w-full xl:w-52"><SelectValue/></SelectTrigger>
               <SelectContent>{roles.map((role) => <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>)}</SelectContent>
             </Select>
             <label className="flex items-center gap-2 text-xs text-zinc-400">
@@ -186,7 +186,7 @@ export function AccessManagement() {
             </Button>
           </div>
           <details className="group mt-4 overflow-hidden rounded-xl border border-white/[.07] bg-black/10">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-medium text-zinc-300 [&::-webkit-details-marker]:hidden">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-zinc-300 [&::-webkit-details-marker]:hidden">
               <span>Acessos por área</span>
               <span className="rounded-full border border-white/[.08] px-2 py-1 text-[10px] text-zinc-500">{user.permissions.length}/{features.length} liberados</span>
             </summary>
@@ -195,18 +195,18 @@ export function AccessManagement() {
                 const groupFeatures = group.features.map((key) => features.find((feature) => feature.key === key)).filter(Boolean) as Feature[]
                 if (groupFeatures.length === 0) return null
                 const allowedCount = groupFeatures.filter((feature) => user.permissions.includes(feature.key)).length
-                return <section key={group.key} className="rounded-lg border border-white/[.06] bg-black/15 p-3">
+                return <section key={group.key} className="rounded-xl border border-white/[.07] bg-black/15 p-4">
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold text-zinc-200">{group.label}</p>
-                      <p className="mt-1 text-[10px] leading-4 text-zinc-600">{group.description}</p>
+                      <p className="text-sm font-semibold text-zinc-200">{group.label}</p>
+                      <p className="mt-1.5 text-xs leading-5 text-zinc-500">{group.description}</p>
                     </div>
                     <span className="shrink-0 text-[10px] text-zinc-600">{allowedCount}/{groupFeatures.length}</span>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                     {groupFeatures.map((feature) => {
                       const allowed = user.permissions.includes(feature.key)
-                      return <label key={feature.key} className={"flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs transition " + (allowed ? "border-primary/20 bg-primary/[.05] text-zinc-200" : "border-white/[.06] text-zinc-600")}>
+                      return <label key={feature.key} className={"flex min-h-10 cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm transition " + (allowed ? "border-primary/20 bg-primary/[.05] text-zinc-200" : "border-white/[.06] text-zinc-600")}>
                         <input type="checkbox" checked={allowed} onChange={() => toggleFeature(user, feature.key)}/>
                         <span>{feature.label}</span>
                       </label>
@@ -245,7 +245,7 @@ export function AccessManagement() {
       </DialogHeader>
 
       <div className="space-y-4">
-        <label className="block space-y-2 text-xs text-zinc-400">
+        <label className="block space-y-2 text-sm text-zinc-400">
           <span>Nova senha</span>
           <Input
             type="password"
@@ -255,7 +255,7 @@ export function AccessManagement() {
             placeholder="Mínimo 12 caracteres"
           />
         </label>
-        <label className="block space-y-2 text-xs text-zinc-400">
+        <label className="block space-y-2 text-sm text-zinc-400">
           <span>Confirmar nova senha</span>
           <Input
             type="password"

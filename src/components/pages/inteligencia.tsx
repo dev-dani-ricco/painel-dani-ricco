@@ -546,16 +546,16 @@ export function IntelligencePage() {
   )
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/[.07] bg-[#0b0b0b]">
-      <header className="flex min-h-16 items-center justify-between gap-4 border-b border-white/[.06] px-4 sm:px-6">
+    <div className="overflow-hidden rounded-[22px] border border-white/[.09] bg-[#0b0b0b] shadow-[0_24px_70px_rgba(0,0,0,.18)]">
+      <header className="flex min-h-[72px] items-center justify-between gap-4 border-b border-white/[.07] px-5 sm:px-7">
         <div className="flex min-w-0 items-center gap-3">
           <DaniAvatar state={recording ? "recording" : sending ? "thinking" : "idle"} size="sm"/>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <p className="truncate text-sm font-semibold text-zinc-100">Dani IA</p>
+              <p className="truncate text-base font-semibold tracking-[-.015em] text-zinc-100">Dani IA</p>
               <span className="size-1.5 rounded-full bg-primary shadow-[0_0_12px_rgba(255,106,0,.8)]"/>
             </div>
-            <p className="truncate text-[10px] text-zinc-600">Clone inteligente · memória viva do ecossistema</p>
+            <p className="mt-0.5 truncate text-xs text-zinc-500">Clone inteligente · memória viva do ecossistema</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -578,18 +578,18 @@ export function IntelligencePage() {
         </div>
       )}
 
-      <div className="grid min-h-[calc(100vh-180px)] xl:grid-cols-[minmax(0,1fr)_360px]">
-        <main className="relative flex min-h-[680px] flex-col bg-[#0a0a0a]">
+      <div className="grid min-h-[calc(100vh-190px)] 2xl:grid-cols-[minmax(0,1fr)_420px]">
+        <main className="relative flex min-h-[720px] flex-col bg-[#0a0a0a]">
           <div className="flex-1 overflow-y-auto">
-            <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
+            <div className="mx-auto w-full max-w-4xl px-5 py-10 sm:px-8 sm:py-12">
               {!messages.length ? (
                 <div className="flex min-h-[430px] flex-col items-center justify-center text-center">
                   <DaniAvatar state={recording ? "recording" : sending ? "thinking" : "idle"} size="xl"/>
                   <p className="mt-7 text-[10px] font-semibold uppercase tracking-[.22em] text-primary">DANI IA</p>
-                  <h1 className="mt-2 text-2xl font-semibold tracking-[-.04em] text-zinc-100 sm:text-3xl">
+                  <h1 className="mt-3 text-3xl font-semibold tracking-[-.04em] text-zinc-100 sm:text-4xl">
                     O que você quer pensar com a Dani?
                   </h1>
-                  <p className="mt-3 max-w-xl text-xs leading-5 text-zinc-600">
+                  <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-500 sm:text-[15px] sm:leading-7">
                     Pergunte, valide uma ideia, envie contexto ou peça uma análise. Quando o clone não tiver evidência suficiente, ele deve dizer o que ainda precisa aprender.
                   </p>
                   <div className="mt-6 flex flex-wrap justify-center gap-2">
@@ -653,8 +653,8 @@ export function IntelligencePage() {
             </div>
           </div>
 
-          <div className="sticky bottom-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a] to-transparent px-3 pb-4 pt-8 sm:px-6">
-            <div className="mx-auto w-full max-w-3xl rounded-[26px] border border-white/[.10] bg-[#171717] p-3 shadow-[0_18px_80px_rgba(0,0,0,.45)]">
+          <div className="sticky bottom-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a] to-transparent px-4 pb-5 pt-10 sm:px-8">
+            <div className="mx-auto w-full max-w-4xl rounded-[26px] border border-white/[.12] bg-[#171717] p-3.5 shadow-[0_18px_80px_rgba(0,0,0,.45)]">
               <label htmlFor="dani-chat-message" className="sr-only">Mensagem para a Dani IA</label>
               <Textarea
                 id="dani-chat-message"
@@ -667,7 +667,7 @@ export function IntelligencePage() {
                   }
                 }}
                 placeholder={recording ? "Gravando áudio para ensinar o clone…" : "Mensagem para a Dani IA"}
-                className="min-h-14 max-h-40 resize-none border-0 bg-transparent px-2 py-2 text-sm shadow-none focus-visible:ring-0"
+                className="min-h-16 max-h-48 resize-none border-0 bg-transparent px-2.5 py-2.5 text-[15px] leading-6 shadow-none focus-visible:ring-0"
               />
               <div className="mt-1 flex items-center gap-1.5">
                 <input
@@ -730,16 +730,16 @@ export function IntelligencePage() {
                 </Button>
               </div>
             </div>
-            <p className="mx-auto mt-2 max-w-3xl text-center text-[9px] text-zinc-600">
+            <p className="mx-auto mt-2.5 max-w-4xl text-center text-[11px] text-zinc-600">
               A Dani IA pode errar. Decisões sensíveis continuam exigindo validação humana.
             </p>
           </div>
         </main>
 
-        <aside className="border-t border-white/[.06] bg-[#0e0e0e] xl:border-l xl:border-t-0">
+        <aside className="border-t border-white/[.07] bg-[#0e0e0e] 2xl:border-l 2xl:border-t-0">
           <button
             type="button"
-            className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left xl:hidden"
+            className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left 2xl:hidden"
             onClick={() => setSidePanelOpen((open) => !open)}
             aria-expanded={sidePanelOpen}
             aria-controls="clone-learning-panel"
@@ -750,8 +750,8 @@ export function IntelligencePage() {
             </span>
             <span className="shrink-0 text-[10px] font-medium text-primary">{sidePanelOpen ? "Fechar" : "Abrir"}</span>
           </button>
-          <div id="clone-learning-panel" className={(sidePanelOpen ? "block " : "hidden ") + "max-h-[calc(100vh-180px)] space-y-0 overflow-y-auto xl:block"}>
-            <section className="border-b border-white/[.06] p-5">
+          <div id="clone-learning-panel" className={(sidePanelOpen ? "block " : "hidden ") + "max-h-[calc(100vh-190px)] space-y-0 overflow-y-auto 2xl:block"}>
+            <section className="border-b border-white/[.07] p-6">
               <div className="flex items-center gap-2">
                 <Sparkles className="size-4 text-primary"/>
                 <h2 className="text-sm font-semibold">Ensinar o clone</h2>
@@ -796,7 +796,7 @@ export function IntelligencePage() {
                 value={memory}
                 onChange={(event) => setMemory(event.target.value)}
                 placeholder="Uma decisão, preferência, frase, regra, feedback, exceção ou caso real…"
-                className="mt-4 min-h-28 resize-none border-white/10 bg-black/20 text-xs"
+                className="mt-4 min-h-36 resize-none border-white/10 bg-black/20 text-sm leading-6"
               />
               <div className="mt-3 flex gap-2">
                 <Button variant="outline" size="sm" disabled={uploading} onClick={() => fileInputRef.current?.click()} aria-label="Adicionar arquivo para ensinar o clone">
@@ -813,7 +813,7 @@ export function IntelligencePage() {
               </div>
             </section>
 
-            <section className="border-b border-white/[.06] p-5">
+            <section className="border-b border-white/[.07] p-6">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[9px] font-bold uppercase tracking-[.18em] text-primary">O clone quer entender melhor</p>
@@ -851,7 +851,7 @@ export function IntelligencePage() {
               </div>
             </section>
 
-            <section className="p-5">
+            <section className="p-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-semibold text-zinc-300">Memórias recentes</h2>
                 <span className="text-[9px] text-zinc-700">{recent.length} visíveis</span>

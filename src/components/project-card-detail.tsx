@@ -126,13 +126,13 @@ function ProjectCardDetailForm({ open, onOpenChange, project, card }: { open: bo
 
   const dependencyCards = project.cards.filter((item) => item.id !== draft.id)
   return <Sheet open={open} onOpenChange={onOpenChange}>
-    <SheetContent className="w-full border-white/10 sm:max-w-2xl">
-      <SheetHeader className="border-b border-border p-6">
+    <SheetContent className="w-full border-white/10 sm:max-w-3xl">
+      <SheetHeader className="border-b border-border p-6 sm:p-7">
         <SheetTitle className="text-xl font-semibold">Detalhes do card</SheetTitle>
         <SheetDescription>{project.name} · contexto, execução e histórico no mesmo card.</SheetDescription>
       </SheetHeader>
       <ScrollArea className="flex-1">
-        <div className="space-y-6 p-6">
+        <div className="space-y-7 p-6 sm:p-7">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Título" className="sm:col-span-2"><Input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })}/></Field>
             <Field label="Responsável"><Input value={draft.owner} onChange={(event) => setDraft({ ...draft, owner: event.target.value })}/></Field>
@@ -143,18 +143,18 @@ function ProjectCardDetailForm({ open, onOpenChange, project, card }: { open: bo
           </div>
 
           <Section icon={ListChecks} title="Checklist">
-            <div className="space-y-2">{(draft.checklist || []).map((item) => <div key={item.id} className="flex items-center gap-2 rounded-lg border border-white/[.06] bg-black/15 p-2.5"><Checkbox checked={item.done} onCheckedChange={(checked) => setDraft((current) => ({ ...current, checklist: (current.checklist || []).map((entry) => entry.id === item.id ? { ...entry, done: checked === true } : entry) }))}/><span className={"min-w-0 flex-1 text-xs " + (item.done ? "text-zinc-600 line-through" : "text-zinc-300")}>{item.title}</span><Button variant="ghost" size="icon-xs" onClick={() => setDraft((current) => ({ ...current, checklist: (current.checklist || []).filter((entry) => entry.id !== item.id) }))}><Trash2/></Button></div>)}</div>
+            <div className="space-y-2">{(draft.checklist || []).map((item) => <div key={item.id} className="flex min-h-11 items-center gap-3 rounded-lg border border-white/[.07] bg-black/15 p-3"><Checkbox checked={item.done} onCheckedChange={(checked) => setDraft((current) => ({ ...current, checklist: (current.checklist || []).map((entry) => entry.id === item.id ? { ...entry, done: checked === true } : entry) }))} aria-label={"Marcar item como concluído: " + item.title}/><span className={"min-w-0 flex-1 text-sm " + (item.done ? "text-zinc-600 line-through" : "text-zinc-300")}>{item.title}</span><Button variant="ghost" size="icon-xs" onClick={() => setDraft((current) => ({ ...current, checklist: (current.checklist || []).filter((entry) => entry.id !== item.id) }))} aria-label={"Remover item do checklist: " + item.title}><Trash2/></Button></div>)}</div>
             <div className="mt-2 flex gap-2"><Input value={newChecklist} onChange={(event) => setNewChecklist(event.target.value)} placeholder="Novo item" onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addChecklist() } }}/><Button variant="outline" onClick={addChecklist}><Plus/>Adicionar</Button></div>
           </Section>
 
           <Section icon={MessageSquareText} title="Comentários e @menções">
-            <div className="space-y-2">{(draft.comments || []).map((comment) => <div key={comment.id} className="rounded-lg border border-white/[.06] bg-black/15 p-3"><div className="flex items-center gap-2 text-[10px] text-zinc-600"><AtSign className="size-3"/><span>{comment.author}</span><span>·</span><span>{new Date(comment.createdAt).toLocaleString("pt-BR")}</span></div><p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-zinc-300">{comment.body}</p></div>)}</div>
+            <div className="space-y-2">{(draft.comments || []).map((comment) => <div key={comment.id} className="rounded-lg border border-white/[.06] bg-black/15 p-3"><div className="flex items-center gap-2 text-[10px] text-zinc-600"><AtSign className="size-3"/><span>{comment.author}</span><span>·</span><span>{new Date(comment.createdAt).toLocaleString("pt-BR")}</span></div><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">{comment.body}</p></div>)}</div>
             <Textarea className="mt-2" rows={3} value={newComment} onChange={(event) => setNewComment(event.target.value)} placeholder="Escreva um comentário. Use @nome para mencionar."/>
             <Button className="mt-2" variant="outline" onClick={addComment}><MessageSquareText/>Adicionar comentário</Button>
           </Section>
 
           <Section icon={Paperclip} title="Anexos">
-            <div className="space-y-2">{(draft.attachments || []).map((attachment) => <div key={attachment.id} className="flex items-center gap-2 rounded-lg border border-white/[.06] bg-black/15 p-2.5"><Link2 className="size-3.5 text-primary"/><a className="min-w-0 flex-1 truncate text-xs text-zinc-300 hover:text-primary" href={attachment.url} target="_blank" rel="noreferrer">{attachment.name}</a><Button variant="ghost" size="icon-xs" onClick={() => setDraft((current) => ({ ...current, attachments: (current.attachments || []).filter((entry) => entry.id !== attachment.id) }))}><Trash2/></Button></div>)}</div>
+            <div className="space-y-2">{(draft.attachments || []).map((attachment) => <div key={attachment.id} className="flex min-h-11 items-center gap-3 rounded-lg border border-white/[.07] bg-black/15 p-3"><Link2 className="size-3.5 text-primary"/><a className="min-w-0 flex-1 truncate text-sm text-zinc-300 hover:text-primary" href={attachment.url} target="_blank" rel="noreferrer">{attachment.name}</a><Button variant="ghost" size="icon-xs" onClick={() => setDraft((current) => ({ ...current, attachments: (current.attachments || []).filter((entry) => entry.id !== attachment.id) }))} aria-label={"Remover anexo: " + attachment.name}><Trash2/></Button></div>)}</div>
             <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1.4fr_auto]"><Input value={attachmentName} onChange={(event) => setAttachmentName(event.target.value)} placeholder="Nome do arquivo"/><Input value={attachmentUrl} onChange={(event) => setAttachmentUrl(event.target.value)} placeholder="https://..."/><Button variant="outline" onClick={addAttachment}><Plus/></Button></div>
           </Section>
 
@@ -164,7 +164,7 @@ function ProjectCardDetailForm({ open, onOpenChange, project, card }: { open: bo
           </Section>
         </div>
       </ScrollArea>
-      <SheetFooter className="border-t border-border p-5">
+      <SheetFooter className="border-t border-border p-5 sm:flex-row sm:items-center sm:p-6">
         <div className="mr-auto text-[10px] text-zinc-600">Criado por {draft.createdBy || "registro legado"}</div>
         <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
         <Button onClick={() => void save()} disabled={saving || !draft.title.trim()}>{saving ? "Salvando..." : "Salvar card"}</Button>
@@ -174,9 +174,9 @@ function ProjectCardDetailForm({ open, onOpenChange, project, card }: { open: bo
 }
 
 function Field({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
-  return <div className={"space-y-2 " + (className || "")}><Label className="text-[10px] uppercase tracking-[.14em] text-zinc-500">{label}</Label>{children}</div>
+  return <div className={"space-y-2 " + (className || "")}><Label className="text-xs font-semibold uppercase tracking-[.12em] text-zinc-500">{label}</Label>{children}</div>
 }
 
 function Section({ icon: Icon, title, children }: { icon: React.ComponentType<{ className?: string }>; title: string; children: React.ReactNode }) {
-  return <section className="rounded-xl border border-white/[.07] bg-white/[.015] p-4"><div className="mb-3 flex items-center gap-2"><Icon className="size-4 text-primary"/><h3 className="text-xs font-semibold">{title}</h3></div>{children}</section>
+  return <section className="rounded-xl border border-white/[.08] bg-white/[.015] p-5"><div className="mb-3 flex items-center gap-2"><Icon className="size-4 text-primary"/><h3 className="text-sm font-semibold">{title}</h3></div>{children}</section>
 }

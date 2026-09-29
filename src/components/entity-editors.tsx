@@ -56,12 +56,12 @@ function TaskSheetForm({ open, onOpenChange, task }: TaskSheetProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full border-white/10 sm:max-w-lg">
-        <SheetHeader className="border-b border-border p-6">
+      <SheetContent className="w-full border-white/10 sm:max-w-xl">
+        <SheetHeader className="border-b border-border p-6 sm:p-7">
           <SheetTitle className="text-xl font-semibold">{task ? "Detalhes da tarefa" : "Nova tarefa"}</SheetTitle>
           <SheetDescription>Atualize responsáveis, prazos e materiais relacionados.</SheetDescription>
         </SheetHeader>
-        <ScrollArea className="flex-1"><div className="space-y-5 p-6">
+        <ScrollArea className="flex-1"><div className="space-y-6 p-6 sm:p-7">
           <Field label="Nome"><Input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="O que precisa ser feito?" /></Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Responsável"><Input value={draft.owner} onChange={(event) => setDraft({ ...draft, owner: event.target.value })} /></Field>
@@ -73,7 +73,7 @@ function TaskSheetForm({ open, onOpenChange, task }: TaskSheetProps) {
           <Field label="Link ou material"><Input value={draft.link} onChange={(event) => setDraft({ ...draft, link: event.target.value })} placeholder="https://..." /></Field>
           <Field label="Observações"><Textarea rows={5} value={draft.notes} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} /></Field>
         </div></ScrollArea>
-        <SheetFooter className="border-t border-border p-5 sm:flex-row">
+        <SheetFooter className="border-t border-border p-5 sm:flex-row sm:items-center sm:p-6">
           {task && <AlertDialog><AlertDialogTrigger asChild><Button variant="destructive" className="mr-auto"><Trash2 />Excluir</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Excluir esta tarefa?</AlertDialogTitle><AlertDialogDescription>Essa ação não poderá ser desfeita.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction variant="destructive" onClick={remove}>Excluir</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}
           {!draft.done && <Button variant="outline" onClick={complete}><Check />Concluir</Button>}
           <Button onClick={save}>Salvar tarefa</Button>
@@ -109,9 +109,9 @@ function EventSheetForm({ open, onOpenChange, event }: EventSheetProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full border-white/10 sm:max-w-lg">
-        <SheetHeader className="border-b border-border p-6"><SheetTitle className="flex items-center gap-2 text-xl font-semibold"><CalendarDays className="text-primary" />{event ? "Detalhes do evento" : "Novo evento"}</SheetTitle><SheetDescription>Organize datas, fase, responsável e observações.</SheetDescription></SheetHeader>
-        <ScrollArea className="flex-1"><div className="space-y-5 p-6">
+      <SheetContent className="w-full border-white/10 sm:max-w-xl">
+        <SheetHeader className="border-b border-border p-6 sm:p-7"><SheetTitle className="flex items-center gap-2 text-xl font-semibold"><CalendarDays className="text-primary" />{event ? "Detalhes do evento" : "Novo evento"}</SheetTitle><SheetDescription>Organize datas, fase, responsável e observações.</SheetDescription></SheetHeader>
+        <ScrollArea className="flex-1"><div className="space-y-6 p-6 sm:p-7">
           <Field label="Nome"><Input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} /></Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Data"><Input type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} /></Field>
@@ -126,7 +126,7 @@ function EventSheetForm({ open, onOpenChange, event }: EventSheetProps) {
           <Field label="Link relacionado"><Input value={draft.link} onChange={(e) => setDraft({ ...draft, link: e.target.value })} placeholder="https://..." /></Field>
           <Field label="Observações"><Textarea rows={4} value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} /></Field>
         </div></ScrollArea>
-        <SheetFooter className="border-t border-border p-5 sm:flex-row">
+        <SheetFooter className="border-t border-border p-5 sm:flex-row sm:items-center sm:p-6">
           {event && <AlertDialog><AlertDialogTrigger asChild><Button variant="destructive" className="mr-auto"><Trash2 />Excluir</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Excluir este evento?</AlertDialogTitle><AlertDialogDescription>Essa ação não poderá ser desfeita.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction variant="destructive" onClick={remove}>Excluir</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}
           {!draft.done && <Button variant="outline" onClick={() => setDraft({ ...draft, done: true, status: "Concluído" })}><Check />Concluir</Button>}
           <Button onClick={save}>Salvar evento</Button>
