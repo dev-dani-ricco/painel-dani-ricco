@@ -16,6 +16,7 @@ const salt = randomBytes(16).toString("hex")
 const hash = (await scrypt(password, salt, 64)).toString("hex")
 const userId = "qa-ux-" + stamp
 const baseUrl = (process.env.QA_BASE_URL || "http://127.0.0.1:3333").replace(/\/+$/, "")
+const shareUrl = process.env.QA_SHARE_URL
 
 const routes = [
   "/", "/calendario", "/minhas-tarefas", "/inteligencia", "/projetos",
@@ -51,6 +52,7 @@ try {
   const page = await context.newPage()
   page.on("pageerror", (error) => findings.push({ severity: "error", route: page.url(), issue: "pageerror", detail: error.message }))
 
+  if (shareUrl) await page.goto(shareUrl, { waitUntil: "domcontentloaded" })
   await page.goto(baseUrl + "/login", { waitUntil: "domcontentloaded" })
   const usernameInput = page.locator("form input").first()
   const passwordInput = page.locator('form input[type="password"]')

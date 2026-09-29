@@ -8,6 +8,7 @@ import { chromium } from "playwright"
 
 nextEnv.loadEnvConfig(process.cwd())
 const baseUrl = (process.env.QA_BASE_URL || "http://127.0.0.1:3334").replace(/\/+$/, "")
+const shareUrl = process.env.QA_SHARE_URL
 const sql = neon(process.env.DATABASE_URL)
 const scrypt = promisify(scryptCallback)
 const stamp = Date.now().toString(36)
