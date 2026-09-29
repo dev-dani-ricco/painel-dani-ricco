@@ -71,6 +71,13 @@ if (!baseUrl) {
   server.stderr.on("data", (data) => process.stderr.write("[QA SERVER] " + data.toString()))
 }
 
+const shareToken = shareUrl ? new URL(shareUrl).searchParams.get("_vercel_share") : null
+const withShare = (pathname) => {
+  const url = new URL(pathname, baseUrl)
+  if (shareToken) url.searchParams.set("_vercel_share", shareToken)
+  return url.toString()
+}
+
 await sql.query(
   "INSERT INTO panel_users (id, username, display_name, role, password_salt, password_hash, active, must_change_password) VALUES ($1,$2,$3,$4,$5,$6,TRUE,FALSE)",
   [userId, username, "QA Gate", "admin", salt, hash],
@@ -78,20 +85,22 @@ await sql.query(
 
 let browser
 try {
-  await waitForServer(baseUrl + "/login")
+  await waitForServer(withShare("/login"))
   browser = await chromium.launch({ headless: true, executablePath })
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } })
   const page = await context.newPage()
   if (shareUrl) await page.goto(shareUrl, { waitUntil: "domcontentloaded" })
 
-  const publicAsset = await context.request.get(baseUrl + "/dani/logo-branca.png")
-  if (publicAsset.status() !== 200 || !String(publicAsset.headers()["content-type"] || "").startsWith("image/")) {
-    throw new Error("PUBLIC_DANI_ASSET_BLOCKED")
+  if (!shareUrl) {
+    const publicAsset = await context.request.get(baseUrl + "/dani/logo-branca.png")
+    if (publicAsset.status() !== 200 || !String(publicAsset.headers()["content-type"] || "").startsWith("image/")) {
+      throw new Error("PUBLIC_DANI_ASSET_BLOCKED")
+    }
+    const privateApi = await context.request.get(baseUrl + "/api/projects")
+    if (privateApi.status() !== 401) throw new Error("PRIVATE_API_NOT_PROTECTED")
   }
-  const privateApi = await context.request.get(baseUrl + "/api/projects")
-  if (privateApi.status() !== 401) throw new Error("PRIVATE_API_NOT_PROTECTED")
 
-  await page.goto(baseUrl + "/login", { waitUntil: "domcontentloaded" })
+  await page.goto(withShare("/login"), { waitUntil: "domcontentloaded" })
   await page.getByLabel("Usuário").waitFor({ state: "visible" })
   await page.waitForTimeout(800)
   await page.getByLabel("Usuário").click()
@@ -124,20 +133,20 @@ try {
   const headerPosition = await page.locator("header").first().evaluate((el) => getComputedStyle(el).position)
   if (headerPosition !== "fixed") throw new Error("TOPBAR_NOT_FIXED")
 
-  await page.goto(baseUrl + "/minhas-tarefas", { waitUntil: "domcontentloaded" })
+  await page.goto(withShare("/minhas-tarefas"), { waitUntil: "domcontentloaded" })
   await page.getByRole("heading", { name: "Minhas Tarefas" }).waitFor({ state: "visible" })
   await page.getByRole("button", { name: /Atribuídas a mim/ }).waitFor({ state: "visible" })
   await page.getByText("Uma visão transversal dos cards", { exact: false }).waitFor({ state: "visible" })
   console.log("QA_MY_TASKS=PASS")
 
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto(baseUrl + "/", { waitUntil: "domcontentloaded" })
+  await page.goto(withShare("/"), { waitUntil: "domcontentloaded" })
   await page.getByText("Central da Dani", { exact: true }).first().waitFor()
   const mobileOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   if (mobileOverflow > 2) throw new Error("MOBILE_HOME_HORIZONTAL_OVERFLOW")
   await page.setViewportSize({ width: 1440, height: 1000 })
 
-  await page.goto(baseUrl + "/projetos", { waitUntil: "domcontentloaded" })
+  await page.goto(withShare("/projetos"), { waitUntil: "domcontentloaded" })
   await page.getByText("Gestão dos projetos", { exact: true }).waitFor({ state: "visible" })
   await page.getByText("Trocar projeto", { exact: true }).click()
   const menuText = await page.locator('[role="menu"]').innerText()
