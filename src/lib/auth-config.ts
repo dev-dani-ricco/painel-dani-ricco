@@ -3,6 +3,7 @@ export const FEATURES = [
   { key: "calendario", label: "Calendário", href: "/calendario" },
   { key: "minhas_tarefas", label: "Minhas Tarefas", href: "/minhas-tarefas" },
   { key: "inteligencia", label: "Central de Inteligência", href: "/inteligencia" },
+  { key: "editor_paginas", label: "Page Studio", href: "/editor-paginas" },
   { key: "projetos", label: "Quadro do Projeto", href: "/projetos" },
   { key: "produto", label: "Produto", href: "/produto" },
   { key: "oferta", label: "Oferta", href: "/oferta" },
@@ -29,7 +30,7 @@ export const FEATURE_GROUPS: Array<{
     key: "platform",
     label: "Plataforma",
     description: "Visão geral e ferramentas transversais.",
-    features: ["overview", "calendario", "minhas_tarefas", "inteligencia"],
+    features: ["overview", "calendario", "minhas_tarefas", "inteligencia", "editor_paginas"],
   },
   {
     key: "project",
@@ -51,7 +52,7 @@ export const ROLE_DEFAULTS: Record<PanelRole, FeatureKey[]> = {
   admin: [...ALL],
   system: [...ALL],
   editor: [
-    "overview", "calendario", "minhas_tarefas", "inteligencia", "projetos", "produto", "oferta",
+    "overview", "calendario", "minhas_tarefas", "inteligencia", "editor_paginas", "projetos", "produto", "oferta",
     "curso", "area_de_membros", "producao", "pre_lancamento",
     "lancamento", "debriefing", "materiais",
   ],
@@ -79,6 +80,7 @@ export function routeFeature(pathname: string): FeatureKey | null {
     pathname.startsWith("/api/knowledge/") ||
     pathname.startsWith("/api/clone/")
   ) return "inteligencia"
+  if (pathname.startsWith("/editor-paginas") || pathname.startsWith("/api/page-builder/")) return "editor_paginas"
   if (pathname.startsWith("/projetos") || pathname.startsWith("/api/projects")) return "projetos"
   if (pathname.startsWith("/produto")) return "produto"
   if (pathname.startsWith("/oferta")) return "oferta"

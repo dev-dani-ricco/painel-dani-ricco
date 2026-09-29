@@ -4,6 +4,7 @@ let sqlClient: ReturnType<typeof neon> | null = null
 let schemaPromise: Promise<void> | null = null
 let projectSchemaPromise: Promise<void> | null = null
 let ecosystemSchemaPromise: Promise<void> | null = null
+let pageBuilderSchemaPromise: Promise<void> | null = null
 
 export function getSql() {
   const connectionString = process.env.DATABASE_URL
@@ -92,4 +93,37 @@ export function ensureEcosystemSchema() {
   }
 
   return ecosystemSchemaPromise
+}
+
+
+export function ensurePageBuilderSchema() {
+  if (!pageBuilderSchemaPromise) {
+    const sql = getSql()
+    pageBuilderSchemaPromise = (async () => {
+      await sql`
+        CREATE TABLE IF NOT EXISTS page_builder_documents (
+          slug TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          draft JSONB NOT NULL,
+          published JSONB,
+          revision INTEGER NOT NULL DEFAULT 1,
+          published_revision INTEGER,
+          published_at TIMESTAMPTZ,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `
+      await sql`
+        CREATE TABLE IF NOT EXISTS page_builder_assets (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL DEFAULT '',
+          mime_type TEXT NOT NULL,
+          byte_size INTEGER NOT NULL,
+          data BYTEA NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `
+    })()
+  }
+
+  return pageBuilderSchemaPromise
 }

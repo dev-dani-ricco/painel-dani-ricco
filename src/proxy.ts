@@ -43,7 +43,9 @@ export async function proxy(request: NextRequest) {
   const publicAuthApi =
     pathname === "/api/auth/login" ||
     pathname === "/api/auth/logout" ||
-    pathname === "/api/auth/me"
+    pathname === "/api/auth/me" ||
+    pathname.startsWith("/api/page-builder/public/") ||
+    pathname.startsWith("/api/page-builder/assets/")
 
   if (publicAuthApi) return noIndex(NextResponse.next())
 
