@@ -67,9 +67,16 @@ Escopo: portal autenticado (`portal-ui`). O site público e as experiências pú
 - QA visual automatizado: 15 rotas × 3 viewports = 45 verificações, 0 erros, 0 alertas.
 - QA funcional crítico: PASS em tarefas, proxy, permissões, home, ecossistema, topbar, mobile, troca de projeto e adição de etapa.
 - Capturas visuais: 8 telas críticas (4 desktop + 4 mobile), armazenadas somente em `qa-artifacts/` local.
-- Preview Vercel: PENDENTE no momento deste documento.
-- QA de produção: PENDENTE no momento deste documento.
+- Preview Vercel: PASS no commit `d41e124`; `qa:portal-ux` = 45/45, 0 erros, 0 alertas.
+- QA funcional no preview: PASS em todos os fluxos críticos.
+- Capturas do preview: PASS, 8 telas críticas.
+- Produção Vercel: deployment `dpl_HhKyoZRqF4Z2GmzUrbT25moUCg4c` READY.
+- Domínio validado: `painel.daniricco.com.br`.
+- QA visual em produção: 45/45, 0 erros, 0 alertas.
+- QA funcional em produção: PASS em todos os fluxos críticos.
+- Segurança pós-deploy: `/api/knowledge/sources`, `/api/clone/pulse` e `/api/dashboard` retornam 401 sem sessão.
+- Runtime Vercel após promoção: 0 erros no período de validação.
 
 ## Critério de promoção
 
-Promover somente o mesmo artefato validado em preview, depois de repetir `qa:critical` e `qa:portal-ux` contra a URL de preview. Após promoção, repetir ambos os QAs no domínio de produção e verificar proteção 401 das APIs privadas sem sessão.
+Atendido. O artefato validado em preview foi promovido e revalidado no domínio real. Esta release pode ser tratada como baseline visual e responsivo do portal autenticado.
