@@ -1,4 +1,4 @@
-import { cloneAI } from "@/lib/clone-ai"
+import { embedCloneTexts } from "@/lib/clone-ai"
 import { chunkKnowledgeText, type KnowledgeChunkDraft } from "@/lib/knowledge-chunking"
 import {
   ensureKnowledgeSchema,
@@ -55,36 +55,27 @@ function vectorLiteral(values: number[]) {
   return "[" + values.join(",") + "]"
 }
 
-function embeddingModelFor(source: "openai" | "vercel-gateway") {
-  return source === "openai"
-    ? process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small"
-    : process.env.AI_GATEWAY_EMBEDDING_MODEL || "openai/text-embedding-3-small"
-}
-
 async function embedValues(values: string[], request?: Request) {
+  void request
   if (!values.length) return null
-  const ai = cloneAI(request)
-  if (!ai) return null
-  const model = embeddingModelFor(ai.source)
-  const vectors: number[][] = []
+  const result = await embedCloneTexts(values)
+  if (!result) return null
 
-  for (let start = 0; start < values.length; start += 32) {
-    const batch = values.slice(start, start + 32)
-    const response = await ai.client.embeddings.create({
-      model,
-      input: batch,
-    })
-    const ordered = [...response.data].sort((a, b) => a.index - b.index)
-    for (const item of ordered) {
-      if (item.embedding.length !== EMBEDDING_DIMENSIONS) {
-        throw new Error(`INVALID_EMBEDDING_DIMENSIONS:${item.embedding.length}`)
-      }
-      vectors.push(item.embedding)
+  for (const vector of result.vectors) {
+    if (vector.length !== EMBEDDING_DIMENSIONS) {
+      throw new Error(`INVALID_EMBEDDING_DIMENSIONS:${vector.length}`)
     }
   }
 
-  if (vectors.length !== values.length) throw new Error("EMBEDDING_COUNT_MISMATCH")
-  return { model, vectors }
+  if (result.vectors.length !== values.length) {
+    throw new Error("EMBEDDING_COUNT_MISMATCH")
+  }
+
+  return {
+    model: result.model,
+    vectors: result.vectors,
+    source: result.source,
+  }
 }
 
 function chunkEmbeddingInput(source: SourceRow, chunk: KnowledgeChunkDraft) {
@@ -160,23 +151,11 @@ export async function indexKnowledgeSource(input: {
     const analysisRun = await analyzeQuestionnaireChunks(drafts, input.request)
     questionnaireAnalyses = analysisRun.items
 
-    if (!analysisRun.aiAvailable) {
-      await markStage("analysis", "failed", {
-        analyzed: questionnaireAnalyses.length,
-        successfulBatches: analysisRun.successfulBatches,
-        failedBatches: analysisRun.failedBatches,
-        reason: "ai_unavailable",
-      })
-      await sql`
-        UPDATE dani_knowledge_sources
-        SET indexing_status = 'analysis_failed'
-        WHERE id = ${source.id}
-      `
-      throw new Error("QUESTIONNAIRE_AI_ANALYSIS_UNAVAILABLE")
-    }
-
     await markStage("analysis", "completed", {
       analyzed: questionnaireAnalyses.length,
+      analysisMode: analysisRun.aiAvailable ? "model-enriched" : "deterministic",
+      successfulBatches: analysisRun.successfulBatches,
+      failedBatches: analysisRun.failedBatches,
       reviewRequired: questionnaireAnalyses.filter((item) => item.needsHumanReview).length,
       highGuidance: questionnaireAnalyses.filter((item) => item.guidanceStrength === "high").length,
     })
@@ -196,22 +175,14 @@ export async function indexKnowledgeSource(input: {
   }
   await markStage(
     "embedding",
-    embeddingPack ? "completed" : mode === "questionnaire" ? "failed" : "warning",
+    embeddingPack ? "completed" : "warning",
     {
       embedded: embeddingPack?.vectors.length || 0,
       model: embeddingPack?.model || null,
-      warning: embeddingWarning,
+      source: embeddingPack?.source || null,
+      warning: embeddingWarning || (embeddingPack ? null : "EMBEDDING_RUNTIME_NOT_CONFIGURED"),
     },
   )
-
-  if (mode === "questionnaire" && !embeddingPack) {
-    await sql`
-      UPDATE dani_knowledge_sources
-      SET indexing_status = 'embedding_failed'
-      WHERE id = ${source.id}
-    `
-    throw new Error("QUESTIONNAIRE_EMBEDDING_UNAVAILABLE")
-  }
 
   await markStage("persistence", "started", { chunks: drafts.length })
   const now = new Date().toISOString()
@@ -250,7 +221,9 @@ export async function indexKnowledgeSource(input: {
             indexedAt: now,
             indexedChunks: drafts.length,
             embeddingModel: embeddingPack?.model || null,
-            embeddingWarning,
+            embeddingSource: embeddingPack?.source || null,
+            embeddingWarning: embeddingWarning || (embeddingPack ? null : "EMBEDDING_RUNTIME_NOT_CONFIGURED"),
+            retrievalFallback: embeddingPack ? null : "postgres-fts",
           })}::jsonb
       WHERE id = ${source.id}
     `)

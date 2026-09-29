@@ -1,4 +1,4 @@
-import { cloneAI } from "@/lib/clone-ai"
+import { cloneAI, cloneCompletion } from "@/lib/clone-ai"
 import { CLONE_DOMAINS } from "@/lib/clone-blueprint"
 
 export type CloneClassification = {
@@ -89,10 +89,11 @@ export async function classifyCloneContent(input: {
 
   try {
     const domains = CLONE_DOMAINS.map((item) => item.key + "=" + item.label).join("; ")
-    const response = await ai.client.responses.create({
-      model: ai.fastModel,
-      store: false,
-      instructions: [
+    const output = await cloneCompletion({
+      ai,
+      fast: true,
+      json: true,
+      system: [
         "Classifique uma memória destinada ao clone digital de Dani Ricco.",
         "Responda SOMENTE JSON válido, sem markdown.",
         "Escolha exatamente um topic entre os domínios fornecidos.",
@@ -104,22 +105,12 @@ export async function classifyCloneContent(input: {
         "Nunca invente fatos ausentes.",
         "DOMÍNIOS: " + domains,
       ].join(" "),
-      input: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-              text:
-                "TÍTULO: " + (input.title || "Sem título") +
-                "\n\nCONTEÚDO:\n" + input.text.slice(0, 16000),
-            },
-          ],
-        },
-      ],
+      user:
+        "TÍTULO: " + (input.title || "Sem título") +
+        "\n\nCONTEÚDO:\n" + input.text.slice(0, 16000),
     })
 
-    const parsed = JSON.parse(response.output_text) as Partial<CloneClassification>
+    const parsed = JSON.parse(output) as Partial<CloneClassification>
     const domain = CLONE_DOMAINS.find((item) => item.key === parsed.topic)
     if (!domain) return fallback
 

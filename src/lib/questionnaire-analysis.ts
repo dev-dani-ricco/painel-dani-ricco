@@ -1,5 +1,6 @@
-import { cloneAI } from "@/lib/clone-ai"
+import { cloneAI, cloneCompletion } from "@/lib/clone-ai"
 import { CLONE_DOMAINS } from "@/lib/clone-blueprint"
+import { fallbackCloneClassification } from "@/lib/clone-classification"
 import type { KnowledgeChunkDraft } from "@/lib/knowledge-chunking"
 
 export type QuestionnaireAnalysis = {
@@ -21,24 +22,31 @@ const CONTENT_TYPES = new Set<QuestionnaireAnalysis["contentType"]>([
 ])
 
 function fallbackAnalysis(chunk: KnowledgeChunkDraft): QuestionnaireAnalysis {
-  const text = chunk.content.toLowerCase()
-  const domain = CLONE_DOMAINS
-    .map((item) => ({
-      item,
-      score: item.keywords.reduce((score, keyword) =>
-        score + (text.includes(keyword.toLowerCase()) ? 1 : 0), 0),
-    }))
-    .sort((a, b) => b.score - a.score)[0]?.item ?? CLONE_DOMAINS[0]
+  const answer = typeof chunk.metadata.answer === "string"
+    ? chunk.metadata.answer
+    : chunk.content
+  const question = typeof chunk.metadata.question === "string"
+    ? chunk.metadata.question
+    : chunk.sectionTitle || undefined
+  const classification = fallbackCloneClassification({
+    text: answer,
+    title: question,
+  })
+  const normalized = answer.toLowerCase()
+  const explicitRule = /\b(sempre|nunca|jamais|deve|prefiro|evito|nao aceito|não aceito)\b/i.test(normalized)
+  const sensitive = /\b(saude|saúde|medic|jurid|financeir|famil|relig|politic|sexual|diagnostic)\b/i.test(normalized)
 
   return {
-    topic: domain.key,
-    topicLabel: domain.label,
-    contentType: "fact",
-    analysisSummary: "Análise automática pendente de validação humana.",
-    guidance: "Use somente a resposta explícita como evidência até revisão.",
-    confidence: 5,
-    guidanceStrength: "low",
-    sensitivity: "normal",
+    topic: classification.topic,
+    topicLabel: classification.topicLabel,
+    contentType: classification.contentType,
+    analysisSummary:
+      "Classificação determinística da resposta original; nenhuma inferência de modelo foi necessária.",
+    guidance:
+      "Use a resposta original como evidência primária. Esta classificação organiza a recuperação e continua sujeita à revisão humana.",
+    confidence: classification.confidence,
+    guidanceStrength: explicitRule ? "medium" : "low",
+    sensitivity: sensitive ? "sensitive" : "normal",
     needsHumanReview: true,
     potentialConflict: null,
   }
@@ -99,7 +107,7 @@ export async function analyzeQuestionnaireChunks(
   }
   const ai = cloneAI(request)
   if (!ai) {
-    return { items: fallbacks, aiAvailable: false, successfulBatches: 0, failedBatches: 1 }
+    return { items: fallbacks, aiAvailable: false, successfulBatches: 0, failedBatches: 0 }
   }
 
   const results = [...fallbacks]
@@ -110,10 +118,11 @@ export async function analyzeQuestionnaireChunks(
   for (let start = 0; start < chunks.length; start += 8) {
     const batch = chunks.slice(start, start + 8)
     try {
-      const response = await ai.client.responses.create({
-        model: ai.fastModel,
-        store: false,
-        instructions: [
+      const output = await cloneCompletion({
+        ai,
+        fast: true,
+        json: true,
+        system: [
           "Analise respostas de um questionário destinado a orientar o clone privado de Dani Ricco.",
           "A resposta original é a evidência; sua interpretação é derivada e nunca deve virar fato por si só.",
           "Responda SOMENTE JSON válido no formato {\"items\":[...]}, mantendo a mesma ordem dos itens.",
@@ -128,7 +137,7 @@ export async function analyzeQuestionnaireChunks(
           "Nunca invente história, intenção, crença ou regra não escrita na resposta.",
           "DOMÍNIOS: " + domains,
         ].join(" "),
-        input: JSON.stringify({
+        user: JSON.stringify({
           items: batch.map((chunk, index) => ({
             index,
             question: chunk.metadata.question || chunk.sectionTitle,
@@ -136,7 +145,7 @@ export async function analyzeQuestionnaireChunks(
           })),
         }),
       })
-      const parsed = parseJson(response.output_text)
+      const parsed = parseJson(output)
       batch.forEach((chunk, index) => {
         results[start + index] = normalizeAnalysis(parsed.items?.[index], fallbacks[start + index])
       })

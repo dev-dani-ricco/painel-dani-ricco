@@ -151,7 +151,7 @@ export function IntelligencePage() {
   const [saving, setSaving] = React.useState(false)
   const [uploading, setUploading] = React.useState(false)
   const [notice, setNotice] = React.useState("")
-  const [engine, setEngine] = React.useState("fallback")
+  const [engine, setEngine] = React.useState("dani-core-local")
   const [recording, setRecording] = React.useState(false)
   const [audioStage, setAudioStage] = React.useState<"idle" | "recording" | "processing" | "success" | "error">("idle")
   const [recordingSeconds, setRecordingSeconds] = React.useState(0)
@@ -170,7 +170,7 @@ export function IntelligencePage() {
     const body = await response.json()
     if (!response.ok) throw new Error(body.error || "Falha ao carregar o clone")
     setPulse(body)
-    setEngine(body.stats?.engine || "fallback")
+    setEngine(body.stats?.engine || "dani-core-local")
   }, [])
 
   React.useEffect(() => {
@@ -224,7 +224,7 @@ export function IntelligencePage() {
       })
       const body = await response.json()
       if (!response.ok) throw new Error(body.error || "Falha ao conversar com a Dani IA")
-      setEngine(body.engine || "fallback")
+      setEngine(body.engine || "dani-core-retrieval-only")
       setMessages((current) => [...current, {
         id: crypto.randomUUID(),
         role: "assistant",
@@ -258,7 +258,7 @@ export function IntelligencePage() {
       setMemory("")
       setNotice(
         ingestionMode === "questionnaire"
-          ? "Questionário analisado e indexado. Ele está aguardando revisão antes de orientar a Dani IA."
+          ? "Questionário estruturado e indexado no Dani Core. Ele está aguardando revisão antes de orientar o clone."
           : "Memória incorporada, classificada e indexada.",
       )
       await loadPulse(promptOffset)
@@ -285,10 +285,10 @@ export function IntelligencePage() {
       if (file.type.startsWith("audio/") && body.processing?.status === "ready") {
         setAudioStage("success")
         setNotice("Áudio transcrito e incorporado ao clone com sucesso.")
-      } else if (body.processing?.warning === "AI_GATEWAY_BILLING_REQUIRED") {
+      } else if (body.processing?.warning === "TRANSCRIPTION_RUNTIME_NOT_CONFIGURED") {
         setAudioStage("error")
         setNotice(
-          "Áudio recebido, mas a transcrição de arquivo está pendente porque o AI Gateway da Vercel ainda exige liberação de cobrança. Gravações ao vivo usam a transcrição do navegador quando disponível.",
+          "Áudio recebido e preservado no Dani Core. A transcrição de arquivo depende de um runtime compatível; gravações ao vivo continuam usando a transcrição do navegador quando disponível.",
         )
       } else if (body.processing?.warning) {
         if (file.type.startsWith("audio/")) setAudioStage("error")
@@ -566,7 +566,7 @@ export function IntelligencePage() {
             <span>·</span>
             <span>{stats?.pendingReview || 0} em revisão</span>
             <span>·</span>
-            <span>{engine === "fallback" ? "memória" : "IA ativa"}</span>
+            <span>{engine === "dani-core-local" ? "Dani Core · local" : "Dani Core + modelo opcional"}</span>
           </div>
           <PwaInstallButton/>
         </div>
@@ -788,7 +788,7 @@ export function IntelligencePage() {
               </div>
               {ingestionMode === "questionnaire" && (
                 <div className="mt-3 rounded-lg border border-primary/15 bg-primary/[.035] p-3 text-[10px] leading-5 text-zinc-400">
-                  O questionário será separado em perguntas e respostas, analisado por unidade e ficará em <strong className="text-zinc-200">revisão</strong>. Ele não orienta a Dani IA até aprovação.
+                  O questionário será separado em perguntas e respostas e classificado pelo Dani Core. Um modelo, quando disponível, apenas enriquece a análise. O conteúdo fica em <strong className="text-zinc-200">revisão</strong> e não orienta o clone até aprovação.
                 </div>
               )}
               <Textarea

@@ -68,7 +68,7 @@ try {
   await page.getByLabel("Ensinar o clone com uma nova memória").fill(questionnaire)
   const analyze = page.getByRole("button", { name: /Analisar/ })
   await analyze.click()
-  await page.getByText("Questionário analisado e indexado", { exact: false }).waitFor({ timeout: 180000 })
+  await page.getByText("Questionário estruturado e indexado", { exact: false }).waitFor({ timeout: 180000 })
 
   const sourcePayload = await page.evaluate(async ({ userMarker }) => {
     const response = await fetch("/api/knowledge/sources?projectId=dani-clone", { cache: "no-store" })

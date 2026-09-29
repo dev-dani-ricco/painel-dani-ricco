@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 })
 
   try {
-    const engine = cloneAI(request)?.source || "fallback"
+    const engine = cloneAI(request)?.source || "dani-core-local"
     const [coverage, recent] = await Promise.all([
       getCloneCoverage(),
       listCloneSources(80),
