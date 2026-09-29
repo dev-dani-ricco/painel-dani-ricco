@@ -4,9 +4,16 @@ import { clonePromptFor, CLONE_DOMAINS } from "@/lib/clone-blueprint"
 import { cloneAI } from "@/lib/clone-ai"
 import { classifyCloneContent } from "@/lib/clone-classification"
 import { createKnowledgeSource, getCloneCoverage, listCloneSources } from "@/lib/knowledge-db"
+import {
+  authorityWeight,
+  canContributeKnowledge,
+  defaultAuthorityForUser,
+} from "@/lib/knowledge-governance"
+import { indexKnowledgeSource } from "@/lib/knowledge-indexing"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
+export const maxDuration = 120
 
 export async function GET(request: Request) {
   const session = await currentSession()
@@ -23,6 +30,7 @@ export async function GET(request: Request) {
     const coveredDomains = CLONE_DOMAINS.filter((domain) => (coverage[domain.key] || 0) > 0).length
     const totalMemories = recent.length
     const classified = recent.filter((item) => item.metadata?.topic).length
+    const pendingReview = recent.filter((item) => item.lifecycle_status === "review_required").length
 
     return NextResponse.json({
       prompt,
@@ -31,6 +39,7 @@ export async function GET(request: Request) {
         coveredDomains,
         totalDomains: CLONE_DOMAINS.length,
         classified,
+        pendingReview,
         coveragePercent: Math.round((coveredDomains / CLONE_DOMAINS.length) * 100),
         engine,
       },
@@ -45,6 +54,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const session = await currentSession()
   if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 })
+  if (!canContributeKnowledge(session.role)) {
+    return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 })
+  }
 
   try {
     const body = await request.json() as {
@@ -66,6 +78,7 @@ export async function POST(request: Request) {
       text: answer,
       title: body.question?.trim() || body.domainLabel || domain,
     })
+    const authorityType = defaultAuthorityForUser(session.username)
 
     const source = await createKnowledgeSource({
       projectId: "dani-clone",
@@ -73,6 +86,9 @@ export async function POST(request: Request) {
       title: body.question?.trim().slice(0, 120) || "Resposta contextual",
       status: "ready",
       extractedText: answer,
+      authorityType,
+      authorityWeight: authorityWeight(authorityType),
+      lifecycleStatus: "active",
       metadata: {
         ...classification,
         topic: domain,
@@ -82,12 +98,23 @@ export async function POST(request: Request) {
         contributorName: session.displayName,
         promptId: body.promptId || null,
         sourceMode: "adaptive-question",
+        ingestionMode: "standard",
+        reviewStatus: "not_required",
       },
+    })
+    const indexing = await indexKnowledgeSource({
+      sourceId: source.id,
+      request,
+      ingestionMode: "standard",
+    }).catch((error) => {
+      console.error("adaptive answer indexing failed", error)
+      return { status: "failed", chunks: 0, embedded: 0 }
     })
 
     const coverage = await getCloneCoverage()
     return NextResponse.json({
       source,
+      indexing,
       nextPrompt: clonePromptFor({ username: session.username, coverage }),
     }, { status: 201 })
   } catch (error) {

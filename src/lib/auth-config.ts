@@ -74,7 +74,11 @@ export function routeFeature(pathname: string): FeatureKey | null {
   if (pathname === "/") return "overview"
   if (pathname.startsWith("/calendario")) return "calendario"
   if (pathname.startsWith("/minhas-tarefas")) return "minhas_tarefas"
-  if (pathname.startsWith("/inteligencia") || pathname.startsWith("/api/knowledge/")) return "inteligencia"
+  if (
+    pathname.startsWith("/inteligencia") ||
+    pathname.startsWith("/api/knowledge/") ||
+    pathname.startsWith("/api/clone/")
+  ) return "inteligencia"
   if (pathname.startsWith("/projetos") || pathname.startsWith("/api/projects")) return "projetos"
   if (pathname.startsWith("/produto")) return "produto"
   if (pathname.startsWith("/oferta")) return "oferta"

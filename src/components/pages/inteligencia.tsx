@@ -18,6 +18,15 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 
+type KnowledgeAuthorityType =
+  | "dani_direct"
+  | "official_document"
+  | "team_observation"
+  | "external_reference"
+  | "derived_analysis"
+
+type KnowledgeIngestionMode = "standard" | "questionnaire"
+
 type CloneSource = {
   id: string
   project_id: string
@@ -29,6 +38,12 @@ type CloneSource = {
   status: string
   extracted_text: string | null
   metadata: Record<string, unknown>
+  authority_type: KnowledgeAuthorityType
+  authority_weight: number
+  lifecycle_status: "active" | "review_required" | "superseded" | "rejected"
+  indexing_status: string
+  approved_by: string | null
+  approved_at: string | null
   created_at: string
 }
 
@@ -47,6 +62,7 @@ type Pulse = {
     coveredDomains: number
     totalDomains: number
     classified: number
+    pendingReview: number
     coveragePercent: number
     engine: string
   }
@@ -99,6 +115,11 @@ function label(value: unknown) {
     fact: "Fato",
     reference: "Referência",
     guardrail: "Guardrail",
+    dani_direct: "Dani direta",
+    official_document: "Documento oficial",
+    team_observation: "Observação do time",
+    external_reference: "Referência externa",
+    derived_analysis: "Análise derivada",
     signal: "Sinal",
     context: "Contexto",
     deep: "Profundo",
@@ -118,6 +139,10 @@ export function IntelligencePage() {
   const [messages, setMessages] = React.useState<ChatMessage[]>([])
   const [message, setMessage] = React.useState("")
   const [memory, setMemory] = React.useState("")
+  const [ingestionMode, setIngestionMode] = React.useState<KnowledgeIngestionMode>("standard")
+  const [authorityType, setAuthorityType] = React.useState<KnowledgeAuthorityType>("team_observation")
+  const effectiveAuthorityType: KnowledgeAuthorityType =
+    user?.username?.toUpperCase() === "DANI" ? "dani_direct" : authorityType
   const [promptAnswer, setPromptAnswer] = React.useState("")
   const [confidence, setConfidence] = React.useState("7")
   const [promptOffset, setPromptOffset] = React.useState(0)
@@ -222,12 +247,20 @@ export function IntelligencePage() {
       const response = await fetch("/api/knowledge/sources", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({
+          content,
+          ingestionMode,
+          authorityType: effectiveAuthorityType,
+        }),
       })
       const body = await response.json()
       if (!response.ok) throw new Error(body.error || "Falha ao registrar memória")
       setMemory("")
-      setNotice("Memória incorporada e classificada automaticamente.")
+      setNotice(
+        ingestionMode === "questionnaire"
+          ? "Questionário analisado e indexado. Ele está aguardando revisão antes de orientar a Dani IA."
+          : "Memória incorporada, classificada e indexada.",
+      )
       await loadPulse(promptOffset)
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Falha ao registrar memória")
@@ -242,6 +275,8 @@ export function IntelligencePage() {
     try {
       const form = new FormData()
       form.set("file", file)
+      form.set("ingestionMode", ingestionMode)
+      form.set("authorityType", effectiveAuthorityType)
       const response = await fetch("/api/knowledge/sources", { method: "POST", body: form })
       const body = await response.json()
       if (!response.ok) throw new Error(body.error || "Falha no envio")
@@ -260,7 +295,11 @@ export function IntelligencePage() {
         setNotice("Conteúdo recebido. Parte do processamento inteligente ficou pendente.")
       } else {
         if (file.type.startsWith("audio/")) setAudioStage("success")
-        setNotice(file.name + " foi incorporado ao clone.")
+        setNotice(
+          ingestionMode === "questionnaire"
+            ? file.name + " foi analisado e está aguardando revisão antes de orientar o clone."
+            : file.name + " foi incorporado e indexado no clone.",
+        )
       }
     } catch (error) {
       if (file.type.startsWith("audio/")) setAudioStage("error")
@@ -285,6 +324,7 @@ export function IntelligencePage() {
           sourceMode: "browser-audio-transcript",
           title: "Áudio · " + new Date().toLocaleString("pt-BR"),
           content,
+          authorityType: effectiveAuthorityType,
         }),
       })
       const body = await response.json()
@@ -299,6 +339,24 @@ export function IntelligencePage() {
       return false
     } finally {
       setUploading(false)
+    }
+  }
+
+  async function approveMemory(source: CloneSource) {
+    if (!canApproveMemories || source.lifecycle_status !== "review_required") return
+    setSaving(true)
+    setNotice("Aprovando memória revisada…")
+    try {
+      const response = await fetch("/api/knowledge/sources/" + source.id + "/approve", { method: "POST" })
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.error || "Falha ao aprovar memória")
+      setNotice("Memória aprovada. A partir de agora ela pode orientar a Dani IA.")
+      setAuditRefresh((value) => value + 1)
+      await loadPulse(promptOffset)
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao aprovar memória")
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -483,6 +541,9 @@ export function IntelligencePage() {
   const canDeleteMemories = ["DANI", "TIBROKER"].includes(
     user?.username?.toUpperCase() || "",
   )
+  const canApproveMemories = Boolean(
+    user && ["owner", "admin", "system"].includes(user.role),
+  )
 
   return (
     <div className="overflow-hidden rounded-2xl border border-white/[.07] bg-[#0b0b0b]">
@@ -502,6 +563,8 @@ export function IntelligencePage() {
             <span>{stats?.totalMemories || 0} memórias</span>
             <span>·</span>
             <span>{stats?.coveragePercent || 0}% cobertura</span>
+            <span>·</span>
+            <span>{stats?.pendingReview || 0} em revisão</span>
             <span>·</span>
             <span>{engine === "fallback" ? "memória" : "IA ativa"}</span>
           </div>
@@ -693,7 +756,41 @@ export function IntelligencePage() {
                 <Sparkles className="size-4 text-primary"/>
                 <h2 className="text-sm font-semibold">Ensinar o clone</h2>
               </div>
-              <p className="mt-1 text-[10px] leading-5 text-zinc-600">Registre contexto bruto. A classificação acontece por trás.</p>
+              <p className="mt-1 text-[10px] leading-5 text-zinc-600">
+                Memórias comuns podem entrar ativas. Questionários passam por análise e revisão antes de orientar o clone.
+              </p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <Select value={ingestionMode} onValueChange={(value) => setIngestionMode(value as KnowledgeIngestionMode)}>
+                  <SelectTrigger className="h-9 border-white/10 bg-black/20 text-[10px]">
+                    <SelectValue/>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="standard">Memória comum</SelectItem>
+                    <SelectItem value="questionnaire">Questionário · revisar antes</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={effectiveAuthorityType}
+                  onValueChange={(value) => setAuthorityType(value as KnowledgeAuthorityType)}
+                  disabled={user?.username?.toUpperCase() === "DANI"}
+                >
+                  <SelectTrigger className="h-9 border-white/10 bg-black/20 text-[10px]">
+                    <SelectValue/>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dani_direct">Resposta direta da Dani</SelectItem>
+                    <SelectItem value="official_document">Documento oficial</SelectItem>
+                    <SelectItem value="team_observation">Observação do time</SelectItem>
+                    <SelectItem value="external_reference">Referência externa</SelectItem>
+                    <SelectItem value="derived_analysis">Análise derivada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {ingestionMode === "questionnaire" && (
+                <div className="mt-3 rounded-lg border border-primary/15 bg-primary/[.035] p-3 text-[10px] leading-5 text-zinc-400">
+                  O questionário será separado em perguntas e respostas, analisado por unidade e ficará em <strong className="text-zinc-200">revisão</strong>. Ele não orienta a Dani IA até aprovação.
+                </div>
+              )}
               <Textarea
                 aria-label="Ensinar o clone com uma nova memória"
                 value={memory}
@@ -706,7 +803,8 @@ export function IntelligencePage() {
                   <Upload/> Arquivo
                 </Button>
                 <Button className="ml-auto" size="sm" disabled={!memory.trim() || saving} onClick={() => void saveMemory()}>
-                  {saving ? <LoaderCircle className="animate-spin"/> : <CheckCircle2/>} Incorporar
+                  {saving ? <LoaderCircle className="animate-spin"/> : <CheckCircle2/>}
+                  {ingestionMode === "questionnaire" ? "Analisar" : "Incorporar"}
                 </Button>
               </div>
               <div className="mt-3 flex items-start gap-2 rounded-lg border border-white/[.05] bg-black/20 p-3 text-[9px] leading-4 text-zinc-600">
@@ -774,7 +872,17 @@ export function IntelligencePage() {
                           <p className="mt-1 text-[8px] uppercase tracking-wide text-zinc-700">
                             {String(metadata.contributor || source.kind)} · {new Date(source.created_at).toLocaleDateString("pt-BR")}
                           </p>
+                          <p className="mt-1 text-[8px] text-zinc-600">
+                            {["ready", "lexical_only"].includes(source.indexing_status)
+                              ? "Indexado"
+                              : "Processamento: " + source.indexing_status}
+                          </p>
                         </div>
+                        {source.lifecycle_status === "review_required" && (
+                          <Badge variant="outline" className="border-amber-400/20 text-[8px] text-amber-300">
+                            Em revisão
+                          </Badge>
+                        )}
                         {canDeleteMemories && (
                           <button
                             type="button"
@@ -797,7 +905,20 @@ export function IntelligencePage() {
                         {metadata.topicLabel ? <Chip>{String(metadata.topicLabel)}</Chip> : null}
                         {metadata.contentType ? <Chip>{label(metadata.contentType)}</Chip> : null}
                         {metadata.detailLevel ? <Chip>{label(metadata.detailLevel)}</Chip> : null}
+                        <Chip>{label(source.authority_type)}</Chip>
                       </div>
+                      {canApproveMemories && source.lifecycle_status === "review_required" && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="mt-3 w-full"
+                          disabled={saving}
+                          onClick={() => void approveMemory(source)}
+                        >
+                          {saving ? <LoaderCircle className="animate-spin"/> : <CheckCircle2/>}
+                          Aprovar para orientar o clone
+                        </Button>
+                      )}
                     </div>
                   )
                 })}
