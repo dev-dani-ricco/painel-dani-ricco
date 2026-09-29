@@ -254,7 +254,7 @@ export function IntelligencePage() {
         }),
       })
       const body = await response.json()
-      if (!response.ok) throw new Error(body.error || "Falha ao registrar memória")
+      if (!response.ok) throw new Error(body.message || body.error || "Falha ao registrar memória")
       setMemory("")
       setNotice(
         ingestionMode === "questionnaire"
@@ -279,7 +279,7 @@ export function IntelligencePage() {
       form.set("authorityType", effectiveAuthorityType)
       const response = await fetch("/api/knowledge/sources", { method: "POST", body: form })
       const body = await response.json()
-      if (!response.ok) throw new Error(body.error || "Falha no envio")
+      if (!response.ok) throw new Error(body.message || body.error || "Falha no envio")
       await loadPulse(promptOffset)
 
       if (file.type.startsWith("audio/") && body.processing?.status === "ready") {

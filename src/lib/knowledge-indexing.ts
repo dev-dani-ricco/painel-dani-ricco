@@ -154,10 +154,27 @@ export async function indexKnowledgeSource(input: {
     questionnaireUnits: drafts.filter((item) => item.metadata.questionnaire === true).length,
   })
 
-  let questionnaireAnalyses: Awaited<ReturnType<typeof analyzeQuestionnaireChunks>> = []
+  let questionnaireAnalyses: Awaited<ReturnType<typeof analyzeQuestionnaireChunks>>["items"] = []
   if (mode === "questionnaire") {
     await markStage("analysis", "started", { chunks: drafts.length })
-    questionnaireAnalyses = await analyzeQuestionnaireChunks(drafts, input.request)
+    const analysisRun = await analyzeQuestionnaireChunks(drafts, input.request)
+    questionnaireAnalyses = analysisRun.items
+
+    if (!analysisRun.aiAvailable) {
+      await markStage("analysis", "failed", {
+        analyzed: questionnaireAnalyses.length,
+        successfulBatches: analysisRun.successfulBatches,
+        failedBatches: analysisRun.failedBatches,
+        reason: "ai_unavailable",
+      })
+      await sql`
+        UPDATE dani_knowledge_sources
+        SET indexing_status = 'analysis_failed'
+        WHERE id = ${source.id}
+      `
+      throw new Error("QUESTIONNAIRE_AI_ANALYSIS_UNAVAILABLE")
+    }
+
     await markStage("analysis", "completed", {
       analyzed: questionnaireAnalyses.length,
       reviewRequired: questionnaireAnalyses.filter((item) => item.needsHumanReview).length,
@@ -179,13 +196,22 @@ export async function indexKnowledgeSource(input: {
   }
   await markStage(
     "embedding",
-    embeddingPack ? "completed" : "warning",
+    embeddingPack ? "completed" : mode === "questionnaire" ? "failed" : "warning",
     {
       embedded: embeddingPack?.vectors.length || 0,
       model: embeddingPack?.model || null,
       warning: embeddingWarning,
     },
   )
+
+  if (mode === "questionnaire" && !embeddingPack) {
+    await sql`
+      UPDATE dani_knowledge_sources
+      SET indexing_status = 'embedding_failed'
+      WHERE id = ${source.id}
+    `
+    throw new Error("QUESTIONNAIRE_EMBEDDING_UNAVAILABLE")
+  }
 
   await markStage("persistence", "started", { chunks: drafts.length })
   const now = new Date().toISOString()

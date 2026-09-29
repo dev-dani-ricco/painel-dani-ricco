@@ -148,6 +148,14 @@ export async function POST(request: Request) {
         },
       })
       const indexing = await indexSource(source.id, request, mode)
+      if (mode === "questionnaire" && indexing.status === "failed") {
+        return NextResponse.json({
+          error: "QUESTIONNAIRE_PROCESSING_UNAVAILABLE",
+          message: "O questionário foi preservado em revisão, mas a análise por IA não está disponível. Ele não foi ativado no clone.",
+          source,
+          indexing,
+        }, { status: 503 })
+      }
       return NextResponse.json({ source, indexing }, { status: 201 })
     }
 
@@ -237,6 +245,15 @@ export async function POST(request: Request) {
     const indexing = processed.extractedText
       ? await indexSource(source.id, request, mode)
       : { status: "no_text", chunks: 0, embedded: 0, warning: processed.warning ?? null }
+
+    if (mode === "questionnaire" && indexing.status === "failed") {
+      return NextResponse.json({
+        error: "QUESTIONNAIRE_PROCESSING_UNAVAILABLE",
+        message: "O questionário foi preservado em revisão, mas a análise por IA não está disponível. Ele não foi ativado no clone.",
+        source,
+        indexing,
+      }, { status: 503 })
+    }
 
     return NextResponse.json({
       source,

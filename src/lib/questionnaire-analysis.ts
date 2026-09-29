@@ -82,16 +82,29 @@ function normalizeAnalysis(
   }
 }
 
+export type QuestionnaireAnalysisRun = {
+  items: QuestionnaireAnalysis[]
+  aiAvailable: boolean
+  successfulBatches: number
+  failedBatches: number
+}
+
 export async function analyzeQuestionnaireChunks(
   chunks: KnowledgeChunkDraft[],
   request?: Request,
-): Promise<QuestionnaireAnalysis[]> {
+): Promise<QuestionnaireAnalysisRun> {
   const fallbacks = chunks.map(fallbackAnalysis)
-  if (!chunks.length) return []
+  if (!chunks.length) {
+    return { items: [], aiAvailable: false, successfulBatches: 0, failedBatches: 0 }
+  }
   const ai = cloneAI(request)
-  if (!ai) return fallbacks
+  if (!ai) {
+    return { items: fallbacks, aiAvailable: false, successfulBatches: 0, failedBatches: 1 }
+  }
 
   const results = [...fallbacks]
+  let successfulBatches = 0
+  let failedBatches = 0
   const domains = CLONE_DOMAINS.map((item) => `${item.key}=${item.label}`).join("; ")
 
   for (let start = 0; start < chunks.length; start += 8) {
@@ -127,10 +140,17 @@ export async function analyzeQuestionnaireChunks(
       batch.forEach((chunk, index) => {
         results[start + index] = normalizeAnalysis(parsed.items?.[index], fallbacks[start + index])
       })
+      successfulBatches += 1
     } catch (error) {
+      failedBatches += 1
       console.error("questionnaire analysis fallback", error)
     }
   }
 
-  return results
+  return {
+    items: results,
+    aiAvailable: successfulBatches > 0 && failedBatches === 0,
+    successfulBatches,
+    failedBatches,
+  }
 }
