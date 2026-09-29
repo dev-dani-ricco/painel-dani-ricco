@@ -42,6 +42,7 @@ try {
   browser = await chromium.launch({ headless: true, executablePath })
   const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } })
   const page = await context.newPage()
+  if (shareUrl) await page.goto(shareUrl, { waitUntil: "domcontentloaded" })
   await page.goto(baseUrl + "/login", { waitUntil: "domcontentloaded" })
   const usernameInput = page.locator("form input").first()
   const passwordInput = page.locator('form input[type="password"]')
