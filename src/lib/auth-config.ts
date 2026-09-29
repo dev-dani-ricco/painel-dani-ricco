@@ -80,7 +80,11 @@ export function routeFeature(pathname: string): FeatureKey | null {
     pathname.startsWith("/api/knowledge/") ||
     pathname.startsWith("/api/clone/")
   ) return "inteligencia"
-  if (pathname.startsWith("/editor-paginas") || pathname.startsWith("/api/page-builder/")) return "editor_paginas"
+  if (
+    pathname.startsWith("/editor-paginas") ||
+    pathname.startsWith("/api/page-builder/") ||
+    pathname.startsWith("/api/imersao-content/")
+  ) return "editor_paginas"
   if (pathname.startsWith("/projetos") || pathname.startsWith("/api/projects")) return "projetos"
   if (pathname.startsWith("/produto")) return "produto"
   if (pathname.startsWith("/oferta")) return "oferta"

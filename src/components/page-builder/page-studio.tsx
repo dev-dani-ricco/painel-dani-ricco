@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { Rnd } from "react-rnd"
 import {
   AlignCenter, AlignLeft, AlignRight, ArrowDownToLine, Box,
@@ -385,6 +386,9 @@ export function PageStudio({ slug = "imersao" }: { slug?:string }) {
       <div className="ml-auto flex items-center gap-2">
         <span className={cn("hidden text-[10px] sm:inline", dirty ? "text-amber-400" : "text-zinc-600")}>{dirty ? "Alterações não salvas" : "Salvo"}</span>
         <ToolButton active={preview} onClick={() => setPreview((value) => !value)}><Eye className="size-3.5"/>{preview ? "Editar" : "Prévia"}</ToolButton>
+        <Link href="/editor-paginas/imersao/conteudo" className="hidden h-9 items-center gap-2 rounded-lg border border-[#E85002]/25 bg-[#E85002]/8 px-3 text-[11px] font-medium text-[#ff8f58] transition hover:bg-[#E85002]/15 sm:inline-flex">
+          <WandSparkles className="size-3.5"/>Conteúdo
+        </Link>
         <a href="https://daniricco.com.br/imersao" target="_blank" rel="noopener noreferrer" className="hidden h-9 items-center gap-2 rounded-lg border border-white/[.08] bg-white/[.025] px-3 text-[11px] font-medium text-zinc-400 transition hover:bg-white/[.05] hover:text-white sm:inline-flex">
           <ExternalLink className="size-3.5"/>Abrir página
         </a>

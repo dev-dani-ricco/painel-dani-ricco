@@ -45,7 +45,8 @@ export async function proxy(request: NextRequest) {
     pathname === "/api/auth/logout" ||
     pathname === "/api/auth/me" ||
     pathname.startsWith("/api/page-builder/public/") ||
-    pathname.startsWith("/api/page-builder/assets/")
+    pathname.startsWith("/api/page-builder/assets/") ||
+    pathname === "/api/imersao-content/public"
 
   if (publicAuthApi) return noIndex(NextResponse.next())
 

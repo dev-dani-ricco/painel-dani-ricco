@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
-import { randomUUID } from "crypto"
-import { ensurePageBuilderSchema, getSql } from "@/lib/db"
+import { uploadPublicImage } from "@/lib/blob-storage"
 
 export const runtime = "nodejs"
 
@@ -11,7 +10,6 @@ function parseDataUrl(value: string) {
 }
 
 export async function POST(request: Request) {
-  await ensurePageBuilderSchema()
   const body = await request.json() as { dataUrl?: string; name?: string }
   if (!body.dataUrl) return NextResponse.json({ error: "Imagem ausente." }, { status: 400 })
 
@@ -21,27 +19,17 @@ export async function POST(request: Request) {
   }
 
   const bytes = Buffer.from(parsed.base64, "base64")
-  if (bytes.length > 3_000_000) {
-    return NextResponse.json({ error: "Imagem acima de 3 MB após otimização." }, { status: 413 })
+  if (bytes.length > 5_000_000) {
+    return NextResponse.json({ error: "Imagem acima de 5 MB após otimização." }, { status: 413 })
   }
 
-  const id = randomUUID()
-  const sql = getSql()
-  await sql`
-    INSERT INTO page_builder_assets (id, name, mime_type, byte_size, data)
-    VALUES (
-      ${id},
-      ${(body.name || "").slice(0, 180)},
-      ${parsed.mimeType},
-      ${bytes.length},
-      decode(${parsed.base64}, 'base64')
-    )
-  `
-
-  return NextResponse.json({
-    id,
-    url: `https://painel.daniricco.com.br/api/page-builder/assets/${id}`,
-    mimeType: parsed.mimeType,
-    byteSize: bytes.length,
-  })
+  try {
+    const result = await uploadPublicImage(bytes, parsed.mimeType, "page-studio")
+    return NextResponse.json(result, { status: 201 })
+  } catch (error) {
+    console.error("page_builder_asset_upload_failed", error)
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : "Não foi possível salvar a imagem.",
+    }, { status: 502 })
+  }
 }

@@ -5,6 +5,7 @@ let schemaPromise: Promise<void> | null = null
 let projectSchemaPromise: Promise<void> | null = null
 let ecosystemSchemaPromise: Promise<void> | null = null
 let pageBuilderSchemaPromise: Promise<void> | null = null
+let imersaoContentSchemaPromise: Promise<void> | null = null
 
 export function getSql() {
   const connectionString = process.env.DATABASE_URL
@@ -126,4 +127,24 @@ export function ensurePageBuilderSchema() {
   }
 
   return pageBuilderSchemaPromise
+}
+
+
+export function ensureImersaoContentSchema() {
+  if (!imersaoContentSchemaPromise) {
+    const sql = getSql()
+    imersaoContentSchemaPromise = sql`
+      CREATE TABLE IF NOT EXISTS imersao_content_documents (
+        slug TEXT PRIMARY KEY,
+        draft JSONB NOT NULL,
+        published JSONB,
+        revision INTEGER NOT NULL DEFAULT 1,
+        published_revision INTEGER,
+        published_at TIMESTAMPTZ,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `.then(() => undefined)
+  }
+
+  return imersaoContentSchemaPromise
 }
