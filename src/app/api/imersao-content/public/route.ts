@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { ensureImersaoContentSchema, getSql } from "@/lib/db"
-import type { ImmersaoContentDocument } from "@/lib/imersao-content"
+import { normalizeImmersaoContent, type ImmersaoContentDocument } from "@/lib/imersao-content"
 
 type Row = {
   published: ImmersaoContentDocument | null
@@ -20,7 +20,7 @@ export async function GET() {
   const row = rows[0]
   const response = row?.published
     ? NextResponse.json({
-        document: row.published,
+        document: normalizeImmersaoContent(row.published),
         revision: row.published_revision,
         publishedAt: row.published_at,
       })

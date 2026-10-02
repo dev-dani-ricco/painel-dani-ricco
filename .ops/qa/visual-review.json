@@ -1,0 +1,29 @@
+{
+  "schema": "ti-broker.project-visual-review/v1",
+  "status": "pending",
+  "project": "dani-painel",
+  "approved": false,
+  "reviewed_at": null,
+  "reviewer": null,
+  "required_viewports": [
+    "desktop",
+    "notebook",
+    "mobile"
+  ],
+  "required_checks": [
+    "hierarchy",
+    "readability",
+    "typography",
+    "alignment",
+    "spacing",
+    "consistency",
+    "contrast",
+    "responsive",
+    "no_overlap",
+    "states",
+    "brand_reference",
+    "finish_quality"
+  ],
+  "evidence": [],
+  "notes": "Pending real rendered screenshots and independent visual review."
+}

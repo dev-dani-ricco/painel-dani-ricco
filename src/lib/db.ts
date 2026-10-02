@@ -129,21 +129,40 @@ export function ensurePageBuilderSchema() {
   return pageBuilderSchemaPromise
 }
 
-
 export function ensureImersaoContentSchema() {
   if (!imersaoContentSchemaPromise) {
     const sql = getSql()
-    imersaoContentSchemaPromise = sql`
-      CREATE TABLE IF NOT EXISTS imersao_content_documents (
-        slug TEXT PRIMARY KEY,
-        draft JSONB NOT NULL,
-        published JSONB,
-        revision INTEGER NOT NULL DEFAULT 1,
-        published_revision INTEGER,
-        published_at TIMESTAMPTZ,
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `.then(() => undefined)
+    imersaoContentSchemaPromise = (async () => {
+      await sql`
+        CREATE TABLE IF NOT EXISTS imersao_content_documents (
+          slug TEXT PRIMARY KEY,
+          draft JSONB NOT NULL,
+          published JSONB,
+          revision INTEGER NOT NULL DEFAULT 1,
+          published_revision INTEGER,
+          published_at TIMESTAMPTZ,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `
+      await sql`
+        CREATE TABLE IF NOT EXISTS imersao_media_assets (
+          id TEXT PRIMARY KEY,
+          slot TEXT NOT NULL,
+          name TEXT NOT NULL DEFAULT '',
+          url TEXT NOT NULL,
+          pathname TEXT NOT NULL,
+          mime_type TEXT NOT NULL,
+          byte_size INTEGER NOT NULL,
+          width INTEGER,
+          height INTEGER,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `
+      await sql`
+        CREATE INDEX IF NOT EXISTS imersao_media_assets_slot_created_idx
+        ON imersao_media_assets(slot, created_at DESC)
+      `
+    })()
   }
 
   return imersaoContentSchemaPromise

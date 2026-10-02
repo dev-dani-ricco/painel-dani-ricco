@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { ensureImersaoContentSchema, getSql } from "@/lib/db"
 import {
   createDefaultImmersaoContent,
+  normalizeImmersaoContent,
   type ImmersaoContentDocument,
 } from "@/lib/imersao-content"
 
@@ -12,6 +13,14 @@ type Row = {
   published_revision: number | null
   published_at: string | null
   updated_at: string
+}
+
+function validDocument(value: unknown): value is ImmersaoContentDocument {
+  if (!value || typeof value !== "object") return false
+  const doc = value as Partial<ImmersaoContentDocument>
+  return doc.version === 1 && doc.slug === "imersao" && Boolean(doc.hero) && Boolean(doc.about) &&
+    Array.isArray(doc.carousel) && Array.isArray(doc.learning) && Array.isArray(doc.included) &&
+    Array.isArray(doc.offers) && Array.isArray(doc.faq)
 }
 
 export async function GET() {
@@ -39,8 +48,8 @@ export async function GET() {
 
   const row = rows[0]
   return NextResponse.json({
-    draft: row.draft,
-    published: row.published,
+    draft: normalizeImmersaoContent(row.draft),
+    published: row.published ? normalizeImmersaoContent(row.published) : null,
     revision: row.revision,
     publishedRevision: row.published_revision,
     publishedAt: row.published_at,
@@ -56,12 +65,12 @@ export async function PUT(request: Request) {
     action?: "save" | "publish"
   }
 
-  if (!body.document || body.document.slug !== "imersao" || body.document.version !== 1) {
-    return NextResponse.json({ error: "Documento inválido." }, { status: 400 })
+  if (!validDocument(body.document)) {
+    return NextResponse.json({ error: "Conteúdo inválido." }, { status: 400 })
   }
 
   const document: ImmersaoContentDocument = {
-    ...body.document,
+    ...normalizeImmersaoContent(body.document),
     updatedAt: new Date().toISOString(),
   }
   const sql = getSql()

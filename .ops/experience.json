@@ -1,0 +1,32 @@
+{
+  "schema": "ti-broker.experience-contract/v1",
+  "status": "pending",
+  "project": "dani-painel",
+  "generated_at": "2026-10-01T17:32:59.349589+00:00",
+  "required_skills": [
+    "product-design",
+    "design-system",
+    "responsive-ui",
+    "visual-qa"
+  ],
+  "visual_system": {
+    "design_tokens": "required",
+    "component_inventory": "required",
+    "responsive": "required",
+    "accessibility": "AA-target",
+    "states": [
+      "loading",
+      "empty",
+      "error",
+      "success",
+      "disabled"
+    ],
+    "brand_reference": "A_VALIDAR"
+  },
+  "governance": {
+    "ops_managed": true,
+    "visual_qa_required": true,
+    "reviewer_must_differ_from_implementer": true,
+    "production_requires_confirmation": true
+  }
+}

@@ -55,6 +55,7 @@ export type ImmersaoContentDocument = {
     image: ManagedMedia | null
   }
   carousel: ManagedMedia[]
+  learning: EditableListItem[]
   included: EditableListItem[]
   offers: OfferContent[]
   faq: FaqContent[]
@@ -67,12 +68,14 @@ const transform = (): Record<ImmersaoBreakpoint, MediaTransform> => ({
   mobile: { x: 0, y: 0, zoom: 1 },
 })
 
-export function createManagedMedia(name: string, src = "", alt = ""): ManagedMedia {
+export function createManagedMedia(name: string, src?: string, alt?: string): ManagedMedia
+export function createManagedMedia(id: string, src: string, alt: string, name: string): ManagedMedia
+export function createManagedMedia(a: string, b = "", c = "", d?: string): ManagedMedia {
   return {
-    id: crypto.randomUUID(),
-    src,
-    alt,
-    name,
+    id: d === undefined ? crypto.randomUUID() : a,
+    src: b,
+    alt: c,
+    name: d === undefined ? a : d,
     transform: transform(),
   }
 }
@@ -96,6 +99,13 @@ export function createDefaultImmersaoContent(): ImmersaoContentDocument {
       image: null,
     },
     carousel: [],
+    learning: [
+      { id: "posicionamento", title: "POSICIONAMENTO", copy: "Construa uma marca pessoal clara e transforme experiência em percepção de valor." },
+      { id: "comunicacao", title: "COMUNICAÇÃO", copy: "Alinhe comunicação visual, verbal e comportamental. Entenda o que comunicar, como e quando se expor." },
+      { id: "autoridade", title: "AUTORIDADE", copy: "Transforme conhecimento técnico em comunicação relevante e seja lembrada pelo que faz." },
+      { id: "presenca-digital", title: "PRESENÇA DIGITAL", copy: "Use o Instagram estrategicamente para ampliar visibilidade, atrair público e oportunidades." },
+      { id: "percepcao-valor", title: "PERCEPÇÃO DE VALOR", copy: "Mostre seu trabalho com intenção e sustente melhores preços, ofertas e oportunidades." },
+    ],
     included: [
       { id: "hours", title: "12 horas de imersão presencial", copy: "Conteúdo, direção e aplicação ao longo de todo o dia." },
       { id: "workbook", title: "Workbook exclusivo", copy: "Material para acompanhar os conteúdos e organizar decisões." },
@@ -176,4 +186,25 @@ export function createDefaultImmersaoContent(): ImmersaoContentDocument {
 
 export function cloneImmersaoContent(doc: ImmersaoContentDocument): ImmersaoContentDocument {
   return JSON.parse(JSON.stringify(doc)) as ImmersaoContentDocument
+}
+export function normalizeImmersaoContent(
+  value: Partial<ImmersaoContentDocument> | null | undefined,
+): ImmersaoContentDocument {
+  const defaults = createDefaultImmersaoContent()
+  if (!value) return defaults
+
+  return {
+    ...defaults,
+    ...value,
+    version: 1,
+    slug: "imersao",
+    event: { ...defaults.event, ...(value.event || {}) },
+    hero: { ...defaults.hero, ...(value.hero || {}) },
+    about: { ...defaults.about, ...(value.about || {}) },
+    carousel: Array.isArray(value.carousel) ? value.carousel : defaults.carousel,
+    learning: Array.isArray(value.learning) && value.learning.length ? value.learning : defaults.learning,
+    included: Array.isArray(value.included) && value.included.length ? value.included : defaults.included,
+    offers: Array.isArray(value.offers) && value.offers.length ? value.offers : defaults.offers,
+    faq: Array.isArray(value.faq) && value.faq.length ? value.faq : defaults.faq,
+  }
 }

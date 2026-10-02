@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
-  Bell, BookOpen, Boxes, BrainCircuit, CalendarDays, ChartNoAxesColumnIncreasing, CheckSquare2, ChevronDown, ChevronRight, Cloud, CloudOff, LoaderCircle,
+  Bell, BookOpen, Boxes, BrainCircuit, CalendarDays, ChartNoAxesColumnIncreasing, CheckSquare2, ChevronDown, ChevronRight, Cloud, CloudOff, Images, LoaderCircle,
   ClipboardList, FileText, FolderOpen, KeyRound, LayoutDashboard, LogOut, Menu, PackageCheck, PanelsTopLeft, Plus,
   Search, Settings, Sparkles, UserRound,
 } from "lucide-react"
@@ -31,6 +31,7 @@ export const navigation = [
   { href: "/minhas-tarefas", feature: "minhas_tarefas", group: "platform", title: "Minhas Tarefas", short: "Tarefas", icon: CheckSquare2 },
   { href: "/inteligencia", feature: "inteligencia", group: "platform", title: "Central de Inteligência", short: "Inteligência", icon: BrainCircuit },
   { href: "/editor-paginas", feature: "editor_paginas", group: "platform", title: "Page Studio", short: "Editor", icon: PanelsTopLeft },
+  { href: "/imersao/conteudo", feature: "editor_paginas", group: "platform", title: "Conteúdo da Imersão", short: "Conteúdo", icon: Images },
   { href: "/projetos", feature: "projetos", group: "project", title: "Quadro do Projeto", short: "Kanban", icon: Boxes },
   { href: "/produto", feature: "produto", group: "project", title: "Briefing 01 — Produto", short: "Produto", icon: FileText },
   { href: "/oferta", feature: "oferta", group: "project", title: "Briefing 02 — Oferta", short: "Oferta", icon: Sparkles },
