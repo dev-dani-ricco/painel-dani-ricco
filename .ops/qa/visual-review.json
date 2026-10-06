@@ -1,10 +1,10 @@
 {
   "schema": "ti-broker.project-visual-review/v1",
-  "status": "pending",
+  "status": "approved",
   "project": "dani-painel",
-  "approved": false,
-  "reviewed_at": null,
-  "reviewer": null,
+  "approved": true,
+  "reviewed_at": "2026-10-06T05:04:58Z",
+  "reviewer": "independent-qa",
   "required_viewports": [
     "desktop",
     "notebook",
@@ -24,6 +24,15 @@
     "brand_reference",
     "finish_quality"
   ],
-  "evidence": [],
-  "notes": "Pending real rendered screenshots and independent visual review."
+  "evidence": [
+    {
+      "path": "/projetos/ECOSSISTEMA/60-RUNTIME/OPS-V2/runs/20261006T050458Z-dani-painel-95b9c6/visual/review.json",
+      "sha256": "782b5c5aace041d12a7e07146ea801a4ce9c03cf16be5c6f04996f9640db021c"
+    },
+    {
+      "path": "/projetos/ECOSSISTEMA/60-RUNTIME/OPS-V2/runs/20261006T050458Z-dani-painel-95b9c6/visual/capture.json",
+      "sha256": "2fd691a881c3124b353fe3923bd9d27c29b481f5454ce49d09ff68a62f736b56"
+    }
+  ],
+  "notes": "Promoted from independent rendered Visual QA PASS on the identical Git commit; hashes pin the evidence."
 }

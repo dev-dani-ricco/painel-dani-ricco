@@ -1,6 +1,6 @@
 {
   "schema": "ti-broker.experience-contract/v1",
-  "status": "pending",
+  "status": "active",
   "project": "dani-painel",
   "generated_at": "2026-10-01T17:32:59.349589+00:00",
   "required_skills": [
