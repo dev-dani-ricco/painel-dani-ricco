@@ -14,6 +14,7 @@ const projects = read("src/components/pages/projects.tsx")
 const switcher = read("src/components/project-switcher.tsx")
 const ecosystem = read("src/lib/dani-ecosystem.ts")
 const proxy = read("src/proxy.ts")
+const nextConfig = read("next.config.ts")
 const contract = read("AGENTS.md")
 
 assert(login.includes("const authenticatedUser = await refresh()"), "LOGIN_MUST_REFRESH_AUTH_CONTEXT")
@@ -30,6 +31,9 @@ assert(overview.includes("ECOSSISTEMA DIGITAL"), "HOME_MUST_RENDER_ECOSYSTEM")
 assert(overview.includes("previewImage"), "ECOSYSTEM_CARDS_MUST_RENDER_PREVIEWS")
 assert(ecosystem.includes("previewImage:"), "ECOSYSTEM_RESOURCES_MUST_DECLARE_PREVIEWS")
 assert(proxy.includes('pathname.startsWith("/dani/")'), "DANI_PUBLIC_ASSETS_MUST_BYPASS_AUTH_PROXY")
+assert(nextConfig.includes('source: "/testedearquetipo"'), "ARCHETYPE_LEGACY_ENTRY_MUST_REDIRECT")
+assert(nextConfig.includes('source: "/testedearquetipo/:path*"'), "ARCHETYPE_LEGACY_PATHS_MUST_REDIRECT")
+assert(nextConfig.includes("diagnostico-impar-dani-ricco.vercel.app"), "ARCHETYPE_COMPATIBILITY_MUST_TARGET_DIAGNOSTIC_APP")
 
 const switcherBlock = switcher.slice(
   switcher.indexOf("export function ProjectSwitcher"),
