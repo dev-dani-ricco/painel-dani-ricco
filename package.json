@@ -43,5 +43,8 @@
     "shadcn": "^4.21.4",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@vercel/cli-config": "0.3.8"
   }
 }
