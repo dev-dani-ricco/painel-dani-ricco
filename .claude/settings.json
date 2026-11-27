@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Neon",
+      "mcp__Vercel",
+      "mcp__supabase",
+      "mcp__Supabase",
+      "mcp__github",
+      "mcp__Remote_Desktop_Commander",
+      "mcp__Claude_Docs"
+    ]
+  }
+}
