@@ -18,7 +18,7 @@ const links = [
     icon: Globe2,
   },
   {
-    href: ecosystemResource("diagnostico-impar")?.url || "https://diagnostico.daniricco.com.br",
+    href: ecosystemResource("diagnostico-impar")?.url || "https://daniricco.com.br/arquetiposimpar",
     eyebrow: "Experiência gratuita",
     title: "Diagnóstico Arquetípico IMPAR®",
     description: "Descubra a força predominante que conduz sua presença e comunicação.",

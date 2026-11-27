@@ -88,7 +88,7 @@ export const DANI_ECOSYSTEM_RESOURCES: DaniEcosystemResource[] = [
     eyebrow: "Landing page",
     title: "Diagnóstico Arquetípico IMPAR®",
     description: "Experiência gratuita de entrada para o diagnóstico arquetípico.",
-    url: "https://diagnostico.daniricco.com.br",
+    url: "https://daniricco.com.br/arquetiposimpar",
     category: "landing_page",
     source: "external",
     previewImage: "/dani/previews/diagnostico-impar.jpg",

@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
-const DIAGNOSTICO_IMPAR_ORIGIN = "https://diagnostico-impar-dani-ricco.vercel.app";
+// The archetype diagnostic now lives inside the public site.
+const ARQUETIPOS = "/arquetiposimpar";
 
 const nextConfig: NextConfig = {
   turbopack: {
@@ -10,23 +11,23 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/testedearquetipo",
-        destination: DIAGNOSTICO_IMPAR_ORIGIN,
+        destination: ARQUETIPOS,
         permanent: true,
       },
       {
         source: "/testedearquetipo/:path*",
-        destination: `${DIAGNOSTICO_IMPAR_ORIGIN}/:path*`,
+        destination: ARQUETIPOS,
         permanent: true,
       },
       // Public hosts are rewritten to /site/* at the edge, so the bridge must also match there.
       {
         source: "/site/testedearquetipo",
-        destination: DIAGNOSTICO_IMPAR_ORIGIN,
+        destination: ARQUETIPOS,
         permanent: true,
       },
       {
         source: "/site/testedearquetipo/:path*",
-        destination: `${DIAGNOSTICO_IMPAR_ORIGIN}/:path*`,
+        destination: ARQUETIPOS,
         permanent: true,
       },
     ];

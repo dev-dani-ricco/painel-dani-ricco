@@ -20,7 +20,7 @@ export function PublicFrame({ children, compact = false }: { children: React.Rea
             {!compact && (
               <nav className="hidden items-center gap-6 text-[10px] font-semibold uppercase tracking-[.2em] text-[#5b4944] md:flex">
                 <Link href="https://daniricco.com.br" className="transition hover:text-[#6b1d33]">Dani Ricco</Link>
-                <Link href="https://diagnostico.daniricco.com.br" className="transition hover:text-[#6b1d33]">Diagnóstico</Link>
+                <Link href="https://daniricco.com.br/arquetiposimpar" className="transition hover:text-[#6b1d33]">Diagnóstico</Link>
               </nav>
             )}
             <div className="hidden border-l border-[#2a201e]/15 pl-5 text-right sm:block sm:pl-7">
