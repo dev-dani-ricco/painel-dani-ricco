@@ -18,6 +18,17 @@ const nextConfig: NextConfig = {
         destination: `${DIAGNOSTICO_IMPAR_ORIGIN}/:path*`,
         permanent: true,
       },
+      // Public hosts are rewritten to /site/* at the edge, so the bridge must also match there.
+      {
+        source: "/site/testedearquetipo",
+        destination: DIAGNOSTICO_IMPAR_ORIGIN,
+        permanent: true,
+      },
+      {
+        source: "/site/testedearquetipo/:path*",
+        destination: `${DIAGNOSTICO_IMPAR_ORIGIN}/:path*`,
+        permanent: true,
+      },
     ];
   },
 };
